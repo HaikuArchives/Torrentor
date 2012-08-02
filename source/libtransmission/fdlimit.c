@@ -7,12 +7,8 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: fdlimit.c 11817 2011-02-02 23:29:17Z jordan $
+ * $Id: fdlimit.c 13110 2011-12-14 05:42:15Z jordan $
  */
-
-#ifndef WIN32
- #define HAVE_GETRLIMIT
-#endif
 
 #ifdef HAVE_POSIX_FADVISE
  #ifdef _XOPEN_SOURCE
@@ -24,8 +20,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #ifdef SYS_DARWIN
  #include <fcntl.h>
@@ -42,12 +36,10 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef HAVE_GETRLIMIT
- #include <sys/time.h> /* getrlimit */
- #include <sys/resource.h> /* getrlimit */
-#endif
+#include <sys/time.h> /* getrlimit */
+#include <sys/resource.h> /* getrlimit */
 #include <fcntl.h> /* O_LARGEFILE posix_fadvise */
-#include <unistd.h>
+#include <unistd.h> /* lseek(), write(), ftruncate(), pread(), pwrite(), etc */
 
 #include "transmission.h"
 #include "fdlimit.h"
@@ -80,14 +72,14 @@
 #endif
 
 
-static tr_bool
+static bool
 preallocate_file_sparse( int fd, uint64_t length )
 {
     const char zero = '\0';
-    tr_bool success = 0;
+    bool success = 0;
 
     if( !length )
-        success = TRUE;
+        success = true;
 
 #ifdef HAVE_FALLOCATE64
     if( !success ) /* fallocate64 is always preferred, so try it first */
@@ -102,10 +94,10 @@ preallocate_file_sparse( int fd, uint64_t length )
     return success;
 }
 
-static tr_bool
+static bool
 preallocate_file_full( const char * filename, uint64_t length )
 {
-    tr_bool success = 0;
+    bool success = 0;
 
 #ifdef WIN32
 
@@ -163,7 +155,7 @@ preallocate_file_full( const char * filename, uint64_t length )
         {
             uint8_t buf[ 4096 ];
             memset( buf, 0, sizeof( buf ) );
-            success = TRUE;
+            success = true;
             while ( success && ( length > 0 ) )
             {
                 const int thisPass = MIN( length, sizeof( buf ) );
@@ -319,14 +311,14 @@ tr_close_file( int fd )
 
 struct tr_cached_file
 {
-    tr_bool          is_writable;
+    bool             is_writable;
     int              fd;
     int              torrent_id;
     tr_file_index_t  file_index;
     time_t           used_at;
 };
 
-static inline tr_bool
+static inline bool
 cached_file_is_open( const struct tr_cached_file * o )
 {
     assert( o != NULL );
@@ -351,13 +343,13 @@ cached_file_close( struct tr_cached_file * o )
 static int
 cached_file_open( struct tr_cached_file  * o,
                   const char             * filename,
-                  tr_bool                  writable,
+                  bool                     writable,
                   tr_preallocation_mode    allocation,
                   uint64_t                 file_size )
 {
     int flags;
     struct stat sb;
-    tr_bool alreadyExisted;
+    bool alreadyExisted;
 
     /* create subfolders, if any */
     if( writable )
@@ -397,7 +389,14 @@ cached_file_open( struct tr_cached_file  * o,
      * https://bugs.launchpad.net/ubuntu/+source/transmission/+bug/318249
      */
     if( alreadyExisted && ( file_size < (uint64_t)sb.st_size ) )
-        ftruncate( o->fd, file_size );
+    {
+        if( ftruncate( o->fd, file_size ) == -1 )
+        {
+            const int err = errno;
+            tr_err( _( "Couldn't truncate \"%1$s\": %2$s" ), filename, tr_strerror( err ) );
+            return err;
+        }
+    }
 
     if( writable && !alreadyExisted && ( allocation == TR_PREALLOCATE_SPARSE ) )
         preallocate_file_sparse( o->fd, file_size );
@@ -479,44 +478,96 @@ fileset_lookup( struct tr_fileset * set, int torrent_id, tr_file_index_t i )
 static struct tr_cached_file *
 fileset_get_empty_slot( struct tr_fileset * set )
 {
-    struct tr_cached_file * o;
-    struct tr_cached_file * cull;
+    struct tr_cached_file * cull = NULL;
 
-    /* try to find an unused slot */
-    for( o=set->begin; o!=set->end; ++o )
-        if( !cached_file_is_open( o ) )
-            return o;
+    if( set->begin != NULL )
+    {
+        struct tr_cached_file * o;
 
-    /* all slots are full... recycle the least recently used */
-    for( cull=NULL, o=set->begin; o!=set->end; ++o )
-        if( !cull || o->used_at < cull->used_at )
-            cull = o;
-    cached_file_close( cull );
+        /* try to find an unused slot */
+        for( o=set->begin; o!=set->end; ++o )
+            if( !cached_file_is_open( o ) )
+                return o;
+
+        /* all slots are full... recycle the least recently used */
+        for( cull=NULL, o=set->begin; o!=set->end; ++o )
+            if( !cull || o->used_at < cull->used_at )
+                cull = o;
+
+        cached_file_close( cull );
+    }
+
     return cull;
 }
 
-static int
-fileset_get_size( const struct tr_fileset * set )
+/***
+****
+****  Startup / Shutdown
+****
+***/
+
+struct tr_fdInfo
 {
-    return set ? set->end - set->begin : 0;
+    int peerCount;
+    struct tr_fileset fileset;
+};
+
+static void
+ensureSessionFdInfoExists( tr_session * session )
+{
+    assert( tr_isSession( session ) );
+
+    if( session->fdInfo == NULL )
+    {
+        struct rlimit limit;
+        struct tr_fdInfo * i;
+        const int FILE_CACHE_SIZE = 32;
+
+        /* Create the local file cache */
+        i = tr_new0( struct tr_fdInfo, 1 );
+        fileset_construct( &i->fileset, FILE_CACHE_SIZE );
+        session->fdInfo = i;
+
+        /* set the open-file limit to the largest safe size wrt FD_SETSIZE */
+        if( !getrlimit( RLIMIT_NOFILE, &limit ) )
+        {
+            const int old_limit = (int) limit.rlim_cur;
+            const int new_limit = MIN( limit.rlim_max, FD_SETSIZE );
+            if( new_limit != old_limit )
+            {
+                limit.rlim_cur = new_limit;
+                setrlimit( RLIMIT_NOFILE, &limit );
+                getrlimit( RLIMIT_NOFILE, &limit );
+                tr_inf( "Changed open file limit from %d to %d", old_limit, (int)limit.rlim_cur );
+            }
+        }
+    }
+}
+
+void
+tr_fdClose( tr_session * session )
+{
+    if( session && session->fdInfo )
+    {
+        struct tr_fdInfo * i = session->fdInfo;
+        fileset_destruct( &i->fileset );
+        tr_free( i );
+        session->fdInfo = NULL;
+    }
 }
 
 /***
 ****
 ***/
 
-struct tr_fdInfo
-{
-    int socket_count;
-    int socket_limit;
-    int public_socket_limit;
-    struct tr_fileset fileset;
-};
-
 static struct tr_fileset*
 get_fileset( tr_session * session )
 {
-    return session && session->fdInfo ? &session->fdInfo->fileset : NULL;
+    if( !session )
+        return NULL;
+
+    ensureSessionFdInfoExists( session );
+    return &session->fdInfo->fileset;
 }
 
 void
@@ -536,7 +587,7 @@ tr_fdFileClose( tr_session * s, const tr_torrent * tor, tr_file_index_t i )
 }
 
 int
-tr_fdFileGetCached( tr_session * s, int torrent_id, tr_file_index_t i, tr_bool writable )
+tr_fdFileGetCached( tr_session * s, int torrent_id, tr_file_index_t i, bool writable )
 {
     struct tr_cached_file * o = fileset_lookup( get_fileset( s ), torrent_id, i );
 
@@ -545,6 +596,25 @@ tr_fdFileGetCached( tr_session * s, int torrent_id, tr_file_index_t i, tr_bool w
 
     o->used_at = tr_time( );
     return o->fd;
+}
+
+#ifdef SYS_DARWIN
+ #define TR_STAT_MTIME(sb) ((sb).st_mtimespec.tv_sec)
+#else
+ #define TR_STAT_MTIME(sb) ((sb).st_mtime)
+#endif
+
+bool
+tr_fdFileGetCachedMTime( tr_session * s, int torrent_id, tr_file_index_t i, time_t * mtime )
+{
+    bool success;
+    struct stat sb;
+    struct tr_cached_file * o = fileset_lookup( get_fileset( s ), torrent_id, i );
+
+    if(( success = ( o != NULL ) && !fstat( o->fd, &sb )))
+        *mtime = TR_STAT_MTIME( sb );
+
+    return success;
 }
 
 void
@@ -559,7 +629,7 @@ tr_fdFileCheckout( tr_session             * session,
                    int                      torrent_id,
                    tr_file_index_t          i,
                    const char             * filename,
-                   tr_bool                  writable,
+                   bool                     writable,
                    tr_preallocation_mode    allocation,
                    uint64_t                 file_size )
 {
@@ -601,30 +671,29 @@ tr_fdSocketCreate( tr_session * session, int domain, int type )
 {
     int s = -1;
     struct tr_fdInfo * gFd;
-
     assert( tr_isSession( session ) );
-    assert( session->fdInfo != NULL );
 
+    ensureSessionFdInfoExists( session );
     gFd = session->fdInfo;
 
-    if( gFd->socket_count < gFd->socket_limit )
+    if( gFd->peerCount < session->peerLimit )
         if(( s = socket( domain, type, 0 )) < 0 )
             if( sockerrno != EAFNOSUPPORT )
                 tr_err( _( "Couldn't create socket: %s" ), tr_strerror( sockerrno ) );
 
     if( s > -1 )
-        ++gFd->socket_count;
+        ++gFd->peerCount;
 
-    assert( gFd->socket_count >= 0 );
+    assert( gFd->peerCount >= 0 );
 
     if( s >= 0 )
     {
-        static tr_bool buf_logged = FALSE;
+        static bool buf_logged = false;
         if( !buf_logged )
         {
             int i;
             socklen_t size = sizeof( int );
-            buf_logged = TRUE;
+            buf_logged = true;
             getsockopt( s, SOL_SOCKET, SO_SNDBUF, &i, &size );
             tr_dbg( "SO_SNDBUF size is %d", i );
             getsockopt( s, SOL_SOCKET, SO_RCVBUF, &i, &size );
@@ -644,46 +713,27 @@ tr_fdSocketAccept( tr_session * s, int sockfd, tr_address * addr, tr_port * port
     struct sockaddr_storage sock;
 
     assert( tr_isSession( s ) );
-    assert( s->fdInfo != NULL );
     assert( addr );
     assert( port );
 
+    ensureSessionFdInfoExists( s );
     gFd = s->fdInfo;
 
     len = sizeof( struct sockaddr_storage );
     fd = accept( sockfd, (struct sockaddr *) &sock, &len );
 
-    if( ( fd >= 0 ) && gFd->socket_count > gFd->socket_limit )
-    {
-        tr_netCloseSocket( fd );
-        fd = -1;
-    }
-
     if( fd >= 0 )
     {
-        /* "The ss_family field of the sockaddr_storage structure will always
-         * align with the family field of any protocol-specific structure." */
-        if( sock.ss_family == AF_INET )
+        if( ( gFd->peerCount < s->peerLimit )
+            && tr_address_from_sockaddr_storage( addr, port, &sock ) )
         {
-            struct sockaddr_in *si;
-            union { struct sockaddr_storage dummy; struct sockaddr_in si; } s;
-            s.dummy = sock;
-            si = &s.si;
-            addr->type = TR_AF_INET;
-            addr->addr.addr4.s_addr = si->sin_addr.s_addr;
-            *port = si->sin_port;
+            ++gFd->peerCount;
         }
         else
         {
-            struct sockaddr_in6 *si;
-            union { struct sockaddr_storage dummy; struct sockaddr_in6 si; } s;
-            s.dummy = sock;
-            si = &s.si;
-            addr->type = TR_AF_INET6;
-            addr->addr.addr6 = si->sin6_addr;
-            *port = si->sin6_port;
+            tr_netCloseSocket( fd );
+            fd = -1;
         }
-        ++gFd->socket_count;
     }
 
     return fd;
@@ -701,96 +751,9 @@ tr_fdSocketClose( tr_session * session, int fd )
         if( fd >= 0 )
         {
             tr_netCloseSocket( fd );
-            --gFd->socket_count;
+            --gFd->peerCount;
         }
 
-        assert( gFd->socket_count >= 0 );
+        assert( gFd->peerCount >= 0 );
     }
-}
-
-/***
-****
-****  Startup / Shutdown
-****
-***/
-
-static void
-ensureSessionFdInfoExists( tr_session * session )
-{
-    assert( tr_isSession( session ) );
-
-    if( session->fdInfo == NULL )
-        session->fdInfo = tr_new0( struct tr_fdInfo, 1 );
-}
-
-void
-tr_fdClose( tr_session * session )
-{
-    struct tr_fdInfo * gFd = session->fdInfo;
-
-    if( gFd != NULL )
-    {
-        fileset_destruct( &gFd->fileset );
-        tr_free( gFd );
-    }
-
-    session->fdInfo = NULL;
-}
-
-/***
-****
-***/
-
-int
-tr_fdGetFileLimit( tr_session * session )
-{
-    return fileset_get_size( get_fileset( session ) );
-}
-
-void
-tr_fdSetFileLimit( tr_session * session, int limit )
-{
-    ensureSessionFdInfoExists( session );
-
-    if( limit != tr_fdGetFileLimit( session ) )
-    {
-        struct tr_fileset * set = get_fileset( session );
-        fileset_destruct( set );
-        fileset_construct( set, limit );
-    }
-}
-
-void
-tr_fdSetPeerLimit( tr_session * session, int socket_limit )
-{
-    struct tr_fdInfo * gFd;
-
-    ensureSessionFdInfoExists( session );
-
-    gFd = session->fdInfo;
-
-#ifdef HAVE_GETRLIMIT
-    {
-        struct rlimit rlim;
-        const int NOFILE_BUFFER = 512;
-        const int open_max = sysconf( _SC_OPEN_MAX );
-        getrlimit( RLIMIT_NOFILE, &rlim );
-        rlim.rlim_cur = MAX( 1024, open_max );
-        rlim.rlim_cur = MIN( rlim.rlim_cur, rlim.rlim_max );
-        setrlimit( RLIMIT_NOFILE, &rlim );
-        tr_dbg( "setrlimit( RLIMIT_NOFILE, %d )", (int)rlim.rlim_cur );
-        gFd->socket_limit = MIN( socket_limit, (int)rlim.rlim_cur - NOFILE_BUFFER );
-    }
-#else
-    gFd->socket_limit = socket_limit;
-#endif
-    gFd->public_socket_limit = socket_limit;
-
-    tr_dbg( "socket limit is %d", (int)gFd->socket_limit );
-}
-
-int
-tr_fdGetPeerLimit( const tr_session * session )
-{
-    return session && session->fdInfo ? session->fdInfo->public_socket_limit : -1;
 }

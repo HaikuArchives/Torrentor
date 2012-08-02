@@ -1,7 +1,8 @@
 SubDir PROJECT_TOP source libtransmission ;
 
 local defines = [ FDefines __TRANSMISSION__=1 
-				  FDefines HAVE_ZLIB=1 ] ;
+				  FDefines HAVE_ZLIB=1 
+				  FDefines HAVE_MINIUPNP_16=1 ] ;
 
 
 SubDirCcFlags $(defines) ;
@@ -11,58 +12,60 @@ SubDirCcFlags $(defines) ;
 # Define header locations
 #
 SubDirSysHdrs $(PROJECT_TOP) source third_party ;
-SubDirSysHdrs $(PROJECT_TOP) source third_party libevent include ;
 SubDirSysHdrs $(PROJECT_TOP) source third_party libnatpmp ;
+SubDirSysHdrs $(PROJECT_TOP) source third_party libutp ;
 
 
 
-StaticLibrary libtransmission.so :
-    announcer.c
-    bandwidth.c
-    bencode.c
-    bitfield.c
-    blocklist.c
-    cache.c
-    clients.c
-    completion.c
-    ConvertUTF.c
-    crypto.c
-    fdlimit.c
-    handshake.c
-    history.c
-    inout.c
-    json.c
-    JSON_parser.c
-    list.c
-    magnet.c
-    makemeta.c
-    metainfo.c
-    natpmp.c
-    net.c
-    peer-io.c
-    peer-mgr.c
-    peer-msgs.c
-    platform.c
-    port-forwarding.c
-    ptrarray.c
-    ratecontrol.c
-    resume.c
-    rpcimpl.c
-    rpc-server.c
-    session.c
-    stats.c
-    torrent.c
-    torrent-ctor.c
-    torrent-magnet.c
-    tr-dht.c
-    tr-lpd.c
-    tr-udp.c
-    tr-getopt.c
-    trevent.c
-    upnp.c
-    utils.c
-    verify.c
-    web.c
-    webseed.c
+StaticLibrary libtransmission :
+    announcer.c 
+    announcer-http.c 
+    announcer-udp.c 
+    bandwidth.c 
+    bencode.c 
+    bitfield.c 
+    blocklist.c 
+    cache.c 
+    clients.c 
+    completion.c 
+    ConvertUTF.c 
+    crypto.c 
+    fdlimit.c 
+    handshake.c 
+    history.c 
+    inout.c 
+    json.c 
+    JSON_parser.c 
+    list.c 
+    magnet.c 
+    makemeta.c 
+    metainfo.c 
+    natpmp.c 
+    net.c 
+    peer-io.c 
+    peer-mgr.c 
+    peer-msgs.c 
+    platform.c 
+    port-forwarding.c 
+    ptrarray.c 
+    resume.c 
+    rpcimpl.c 
+    rpc-server.c 
+    session.c 
+    stats.c 
+    torrent.c 
+    torrent-ctor.c 
+    torrent-magnet.c 
+    tr-dht.c 
+    tr-lpd.c 
+    tr-udp.c 
+    tr-utp.c 
+    tr-getopt.c 
+    trevent.c 
+    upnp.c 
+    utils.c 
+    verify.c 
+    web.c 
+    webseed.c 
     wildmat.c
 ;

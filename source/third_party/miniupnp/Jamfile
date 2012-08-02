@@ -1,25 +1,6 @@
 SubDir PROJECT_TOP source third_party miniupnp ;
 
-local defines = [ FDefines BUILDING_HAIKU__=1 ] ;
-
-#
-# To turn off debugging symbols export NDEBUG=1 in the environment
-#
-#SubDirC++Flags $(defines) -Wno-c++0x-compat ;
-#SubDirCcFlags $(defines) -Wno-c++0x-compat ;
-
-#
-# Define header locations
-#
-#SubDirSysHdrs $(TOP) ;
-#SubDirSysHdrs $(TOP) SampleCode ;
-
-#SubDirHdrs $(PROJECT_TOP) ;
-
-#SubDirHdrs $(TOP) JavaScriptCore API ;
-#SubDirHdrs $(TOP) JavaScriptCore DerivedSources JavaScriptCore ;
-
-
+SubDirCcFlags $(defines) -DNDEBUG ;
 
 #-----------------------------------------------------------------------------
 # 
@@ -33,6 +14,8 @@ StaticLibrary libminiupnp :
     miniupnpc.c
     miniwget.c
     minixml.c
+    portlistingparse.c
+    receivedata.c
     upnpcommands.c
     upnpreplyparse.c
 ;

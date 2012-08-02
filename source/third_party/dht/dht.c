@@ -212,6 +212,8 @@ struct storage {
     struct storage *next;
 };
 
+static void flush_search_node(struct search_node *n, struct search *sr);
+
 static int send_ping(const struct sockaddr *sa, int salen,
                      const unsigned char *tid, int tid_len);
 static int send_pong(const struct sockaddr *sa, int salen,
@@ -310,7 +312,7 @@ static struct timeval now;
 static time_t mybucket_grow_time, mybucket6_grow_time;
 static time_t expire_stuff_time;
 
-#define MAX_TOKEN_BUCKET_TOKENS 40
+#define MAX_TOKEN_BUCKET_TOKENS 400
 static time_t token_bucket_time;
 static int token_bucket_tokens;
 
@@ -636,6 +638,68 @@ send_cached_ping(struct bucket *b)
     return rc;
 }
 
+/* Called whenever we send a request to a node, increases the ping count
+   and, if that reaches 3, sends a ping to a new candidate. */
+static void
+pinged(struct node *n, struct bucket *b)
+{
+    n->pinged++;
+    n->pinged_time = now.tv_sec;
+    if(n->pinged >= 3)
+        send_cached_ping(b ? b : find_bucket(n->id, n->ss.ss_family));
+}
+
+/* The internal blacklist is an LRU cache of nodes that have sent
+   incorrect messages. */
+static void
+blacklist_node(const unsigned char *id, const struct sockaddr *sa, int salen)
+{
+    int i;
+
+    debugf("Blacklisting broken node.\n");
+
+    if(id) {
+        struct node *n;
+        struct search *sr;
+        /* Make the node easy to discard. */
+        n = find_node(id, sa->sa_family);
+        if(n) {
+            n->pinged = 3;
+            pinged(n, NULL);
+        }
+        /* Discard it from any searches in progress. */
+        sr = searches;
+        while(sr) {
+            for(i = 0; i < sr->numnodes; i++)
+                if(id_cmp(sr->nodes[i].id, id) == 0)
+                    flush_search_node(&sr->nodes[i], sr);
+            sr = sr->next;
+        }
+    }
+    /* And make sure we don't hear from it again. */
+    memcpy(&blacklist[next_blacklisted], sa, salen);
+    next_blacklisted = (next_blacklisted + 1) % DHT_MAX_BLACKLISTED;
+}
+
+static int
+node_blacklisted(const struct sockaddr *sa, int salen)
+{
+    int i;
+
+    if((unsigned)salen > sizeof(struct sockaddr_storage))
+        abort();
+
+    if(dht_blacklisted(sa, salen))
+        return 1;
+
+    for(i = 0; i < DHT_MAX_BLACKLISTED; i++) {
+        if(memcmp(&blacklist[i], sa, salen) == 0)
+            return 1;
+    }
+
+    return 0;
+}
+
 /* Split a bucket into two equal parts. */
 static struct bucket *
 split_bucket(struct bucket *b)
@@ -674,16 +738,6 @@ split_bucket(struct bucket *b)
     return b;
 }
 
-/* Called whenever we send a request to a node. */
-static void
-pinged(struct node *n, struct bucket *b)
-{
-    n->pinged++;
-    n->pinged_time = now.tv_sec;
-    if(n->pinged >= 3)
-        send_cached_ping(b ? b : find_bucket(n->id, n->ss.ss_family));
-}
-
 /* We just learnt about a node, not necessarily a new one.  Confirm is 1 if
    the node sent a message, 2 if it sent us a reply. */
 static struct node *
@@ -700,7 +754,7 @@ new_node(const unsigned char *id, const struct sockaddr *sa, int salen,
     if(id_cmp(id, myid) == 0)
         return NULL;
 
-    if(is_martian(sa))
+    if(is_martian(sa) || node_blacklisted(sa, salen))
         return NULL;
 
     mybucket = in_bucket(myid, b);
@@ -1221,23 +1275,21 @@ find_storage(const unsigned char *id)
 }
 
 static int
-storage_store(const unsigned char *id, const struct sockaddr *sa)
+storage_store(const unsigned char *id,
+              const struct sockaddr *sa, unsigned short port)
 {
     int i, len;
     struct storage *st;
     unsigned char *ip;
-    unsigned short port;
 
     if(sa->sa_family == AF_INET) {
         struct sockaddr_in *sin = (struct sockaddr_in*)sa;
         ip = (unsigned char*)&sin->sin_addr;
         len = 4;
-        port = ntohs(sin->sin_port);
     } else if(sa->sa_family == AF_INET6) {
         struct sockaddr_in6 *sin6 = (struct sockaddr_in6*)sa;
         ip = (unsigned char*)&sin6->sin6_addr;
         len = 16;
-        port = ntohs(sin6->sin6_port);
     } else {
         return -1;
     }
@@ -1328,37 +1380,6 @@ expire_storage(void)
         }
     }
     return 1;
-}
-
-/* We've just found out that a node is buggy. */
-static void
-broken_node(const unsigned char *id, const struct sockaddr *sa, int salen)
-{
-    int i;
-
-    debugf("Blacklisting broken node.\n");
-
-    if(id) {
-        struct node *n;
-        struct search *sr;
-        /* Make the node easy to discard. */
-        n = find_node(id, sa->sa_family);
-        if(n) {
-            n->pinged = 3;
-            pinged(n, NULL);
-        }
-        /* Discard it from any searches in progress. */
-        sr = searches;
-        while(sr) {
-            for(i = 0; i < sr->numnodes; i++)
-                if(id_cmp(sr->nodes[i].id, id) == 0)
-                    flush_search_node(&sr->nodes[i], sr);
-            sr = sr->next;
-        }
-    }
-    /* And make sure we don't hear from it again. */
-    memcpy(&blacklist[next_blacklisted], sa, salen);
-    next_blacklisted = (next_blacklisted + 1) % DHT_MAX_BLACKLISTED;
 }
 
 static int
@@ -1714,7 +1735,7 @@ token_bucket(void)
 {
     if(token_bucket_tokens == 0) {
         token_bucket_tokens = MIN(MAX_TOKEN_BUCKET_TOKENS,
-                                  4 * (now.tv_sec - token_bucket_time));
+                                  100 * (now.tv_sec - token_bucket_time));
         token_bucket_time = now.tv_sec;
     }
 
@@ -1848,8 +1869,6 @@ dht_periodic(const void *buf, size_t buflen,
              time_t *tosleep,
              dht_callback *callback, void *closure)
 {
-    int i;
-
     gettimeofday(&now, NULL);
 
     if(buflen > 0) {
@@ -1867,14 +1886,10 @@ dht_periodic(const void *buf, size_t buflen,
         if(is_martian(from))
             goto dontread;
 
-        for(i = 0; i < DHT_MAX_BLACKLISTED; i++) {
-            if(memcmp(&blacklist[i], from, fromlen) == 0) {
-                debugf("Received packet from blacklisted node.\n");
-                goto dontread;
-            }
+        if(node_blacklisted(from, fromlen)) {
+            debugf("Received packet from blacklisted node.\n");
+            goto dontread;
         }
-
-        /* See parse_message. */
 
         if(((char*)buf)[buflen] != '\0') {
             debugf("Unterminated message.\n");
@@ -1917,7 +1932,7 @@ dht_periodic(const void *buf, size_t buflen,
                 /* This is really annoying, as it means that we will
                    time-out all our searches that go through this node.
                    Kill it. */
-                broken_node(id, from, fromlen);
+                blacklist_node(id, from, fromlen);
                 goto dontread;
             }
             if(tid_match(tid, "pn", NULL)) {
@@ -1935,7 +1950,7 @@ dht_periodic(const void *buf, size_t buflen,
                        gp ? " for get_peers" : "");
                 if(nodes_len % 26 != 0 || nodes6_len % 38 != 0) {
                     debugf("Unexpected length for node info!\n");
-                    broken_node(id, from, fromlen);
+                    blacklist_node(id, from, fromlen);
                 } else if(gp && sr == NULL) {
                     debugf("Unknown search!\n");
                     new_node(id, from, fromlen, 1);
@@ -2089,7 +2104,7 @@ dht_periodic(const void *buf, size_t buflen,
                            203, "Announce_peer with forbidden port number");
                 break;
             }
-            storage_store(info_hash, from);
+            storage_store(info_hash, from, port);
             /* Note that if storage_store failed, we lie to the requestor.
                This is to prevent them from backtracking, and hence
                polluting the DHT. */
@@ -2301,6 +2316,12 @@ dht_send(const void *buf, size_t len, int flags,
 
     if(salen == 0)
         abort();
+
+    if(node_blacklisted(sa, salen)) {
+        debugf("Attempting to send to blacklisted node.\n");
+        errno = EPERM;
+        return -1;
+    }
 
     if(sa->sa_family == AF_INET)
         s = dht_socket;
@@ -2668,10 +2689,20 @@ send_error(const struct sockaddr *sa, int salen,
 #undef COPY
 #undef ADD_V
 
-#ifndef HAVE_MEMMEM
+#ifdef HAVE_MEMMEM
+
 static void *
-memmem(const void *haystack, size_t haystacklen,
-       const void *needle, size_t needlelen)
+dht_memmem(const void *haystack, size_t haystacklen,
+           const void *needle, size_t needlelen)
+{
+    return memmem(haystack, haystacklen, needle, needlelen);
+}
+
+#else
+
+static void *
+dht_memmem(const void *haystack, size_t haystacklen,
+           const void *needle, size_t needlelen)
 {
     const char *h = haystack;
     const char *n = needle;
@@ -2687,6 +2718,7 @@ memmem(const void *haystack, size_t haystacklen,
     }
     return NULL;
 }
+
 #endif
 
 static int
@@ -2713,7 +2745,7 @@ parse_message(const unsigned char *buf, int buflen,
     if(((unsigned char*)ptr) + (len) > (buf) + (buflen)) goto overflow;
 
     if(tid_return) {
-        p = memmem(buf, buflen, "1:t", 3);
+        p = dht_memmem(buf, buflen, "1:t", 3);
         if(p) {
             long l;
             char *q;
@@ -2727,7 +2759,7 @@ parse_message(const unsigned char *buf, int buflen,
         }
     }
     if(id_return) {
-        p = memmem(buf, buflen, "2:id20:", 7);
+        p = dht_memmem(buf, buflen, "2:id20:", 7);
         if(p) {
             CHECK(p + 7, 20);
             memcpy(id_return, p + 7, 20);
@@ -2736,7 +2768,7 @@ parse_message(const unsigned char *buf, int buflen,
         }
     }
     if(info_hash_return) {
-        p = memmem(buf, buflen, "9:info_hash20:", 14);
+        p = dht_memmem(buf, buflen, "9:info_hash20:", 14);
         if(p) {
             CHECK(p + 14, 20);
             memcpy(info_hash_return, p + 14, 20);
@@ -2745,7 +2777,7 @@ parse_message(const unsigned char *buf, int buflen,
         }
     }
     if(port_return) {
-        p = memmem(buf, buflen, "porti", 5);
+        p = dht_memmem(buf, buflen, "porti", 5);
         if(p) {
             long l;
             char *q;
@@ -2758,7 +2790,7 @@ parse_message(const unsigned char *buf, int buflen,
             *port_return = 0;
     }
     if(target_return) {
-        p = memmem(buf, buflen, "6:target20:", 11);
+        p = dht_memmem(buf, buflen, "6:target20:", 11);
         if(p) {
             CHECK(p + 11, 20);
             memcpy(target_return, p + 11, 20);
@@ -2767,7 +2799,7 @@ parse_message(const unsigned char *buf, int buflen,
         }
     }
     if(token_return) {
-        p = memmem(buf, buflen, "5:token", 7);
+        p = dht_memmem(buf, buflen, "5:token", 7);
         if(p) {
             long l;
             char *q;
@@ -2783,7 +2815,7 @@ parse_message(const unsigned char *buf, int buflen,
     }
 
     if(nodes_len) {
-        p = memmem(buf, buflen, "5:nodes", 7);
+        p = dht_memmem(buf, buflen, "5:nodes", 7);
         if(p) {
             long l;
             char *q;
@@ -2799,7 +2831,7 @@ parse_message(const unsigned char *buf, int buflen,
     }
 
     if(nodes6_len) {
-        p = memmem(buf, buflen, "6:nodes6", 8);
+        p = dht_memmem(buf, buflen, "6:nodes6", 8);
         if(p) {
             long l;
             char *q;
@@ -2815,7 +2847,7 @@ parse_message(const unsigned char *buf, int buflen,
     }
 
     if(values_len || values6_len) {
-        p = memmem(buf, buflen, "6:valuesl", 9);
+        p = dht_memmem(buf, buflen, "6:valuesl", 9);
         if(p) {
             int i = p - buf + 9;
             int j = 0, j6 = 0;
@@ -2858,7 +2890,7 @@ parse_message(const unsigned char *buf, int buflen,
     }
 
     if(want_return) {
-        p = memmem(buf, buflen, "4:wantl", 7);
+        p = dht_memmem(buf, buflen, "4:wantl", 7);
         if(p) {
             int i = p - buf + 7;
             *want_return = 0;
@@ -2882,19 +2914,19 @@ parse_message(const unsigned char *buf, int buflen,
 
 #undef CHECK
 
-    if(memmem(buf, buflen, "1:y1:r", 6))
+    if(dht_memmem(buf, buflen, "1:y1:r", 6))
         return REPLY;
-    if(memmem(buf, buflen, "1:y1:e", 6))
+    if(dht_memmem(buf, buflen, "1:y1:e", 6))
         return ERROR;
-    if(!memmem(buf, buflen, "1:y1:q", 6))
+    if(!dht_memmem(buf, buflen, "1:y1:q", 6))
         return -1;
-    if(memmem(buf, buflen, "1:q4:ping", 9))
+    if(dht_memmem(buf, buflen, "1:q4:ping", 9))
         return PING;
-    if(memmem(buf, buflen, "1:q9:find_node", 14))
+    if(dht_memmem(buf, buflen, "1:q9:find_node", 14))
        return FIND_NODE;
-    if(memmem(buf, buflen, "1:q9:get_peers", 14))
+    if(dht_memmem(buf, buflen, "1:q9:get_peers", 14))
         return GET_PEERS;
-    if(memmem(buf, buflen, "1:q13:announce_peer", 19))
+    if(dht_memmem(buf, buflen, "1:q13:announce_peer", 19))
        return ANNOUNCE_PEER;
     return -1;
 

@@ -4,8 +4,7 @@ SubDir PROJECT_TOP source third_party libnatpmp ;
 #
 # To turn off debugging symbols export NDEBUG=1 in the environment
 #
-#SubDirC++Flags $(defines) -fno-exceptions -fno-rtti -ansi -DPOSIX ;
-SubDirCcFlags $(defines) -DENABLE_STRNATPMPERR ;
+SubDirCcFlags -DENABLE_STRNATPMPERR ;
 
 #
 # Define header locations

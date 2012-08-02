@@ -7,11 +7,12 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: magnet.c 11709 2011-01-19 13:48:47Z jordan $
+ * $Id: magnet.c 12915 2011-09-25 21:51:50Z jordan $
  */
 
 #include <assert.h>
 #include <string.h> /* strchr() */
+#include <stdio.h> /* sscanf() */
 
 #include "transmission.h"
 #include "bencode.h"
@@ -98,7 +99,7 @@ base32_to_sha1( uint8_t * out, const char * in, const int inlen )
 tr_magnet_info *
 tr_magnetParse( const char * uri )
 {
-    tr_bool got_checksum = FALSE;
+    bool got_checksum = false;
     int trCount = 0;
     int wsCount = 0;
     char * tr[MAX_TRACKERS];
@@ -140,18 +141,18 @@ tr_magnetParse( const char * uri )
 
                 if( hashlen == 40 ) {
                     tr_hex_to_sha1( sha1, hash );
-                    got_checksum = TRUE;
+                    got_checksum = true;
                 }
                 else if( hashlen == 32 ) {
                     base32_to_sha1( sha1, hash, hashlen );
-                    got_checksum = TRUE;
+                    got_checksum = true;
                 }
             }
 
-            if( ( keylen==2 ) && !memcmp( key, "dn", 2 ) )
+            if( ( vallen > 0 ) && ( keylen==2 ) && !memcmp( key, "dn", 2 ) )
                 displayName = tr_http_unescape( val, vallen );
 
-            if( trCount < MAX_TRACKERS ) {
+            if( ( vallen > 0 ) && ( trCount < MAX_TRACKERS ) ) {
                 int i;
                 if( ( keylen==2 ) && !memcmp( key, "tr", 2 ) )
                     tr[trCount++] = tr_http_unescape( val, vallen );

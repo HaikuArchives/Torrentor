@@ -7,8 +7,11 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: web.c 11709 2011-01-19 13:48:47Z jordan $
+ * $Id: web.c 13245 2012-03-04 13:21:42Z jordan $
  */
+
+#include <string.h> /* strlen(), strstr() */
+#include <stdlib.h> /* getenv() */
 
 #ifdef WIN32
   #include <ws2tcpip.h>
@@ -21,7 +24,6 @@
 #include <event2/buffer.h>
 
 #include "transmission.h"
-#include "list.h"
 #include "net.h" /* tr_address */
 #include "platform.h" /* mutex */
 #include "session.h"
@@ -57,28 +59,22 @@ enum
 ****
 ***/
 
-struct tr_web
-{
-    int close_mode;
-    tr_list * tasks;
-    tr_lock * taskLock;
-};
-
-
-/***
-****
-***/
-
 struct tr_web_task
 {
     long code;
+    long timeout_secs;
+    bool did_connect;
+    bool did_timeout;
     struct evbuffer * response;
     struct evbuffer * freebuf;
     char * url;
     char * range;
+    char * cookies;
     tr_session * session;
     tr_web_done_func * done_func;
     void * done_func_user_data;
+    CURL * curl_easy;
+    struct tr_web_task * next;
 };
 
 static void
@@ -86,10 +82,26 @@ task_free( struct tr_web_task * task )
 {
     if( task->freebuf )
         evbuffer_free( task->freebuf );
+    tr_free( task->cookies );
     tr_free( task->range );
     tr_free( task->url );
     tr_free( task );
 }
+
+/***
+****
+***/
+
+struct tr_web
+{
+    bool curl_verbose;
+    bool curl_ssl_verify;
+    const char * curl_ca_bundle;
+    int close_mode;
+    struct tr_web_task * tasks;
+    tr_lock * taskLock;
+    char * cookie_filename;
+};
 
 /***
 ****
@@ -110,8 +122,8 @@ static int
 sockoptfunction( void * vtask, curl_socket_t fd, curlsocktype purpose UNUSED )
 {
     struct tr_web_task * task = vtask;
-    const tr_bool isScrape = strstr( task->url, "scrape" ) != NULL;
-    const tr_bool isAnnounce = strstr( task->url, "announce" ) != NULL;
+    const bool isScrape = strstr( task->url, "scrape" ) != NULL;
+    const bool isAnnounce = strstr( task->url, "announce" ) != NULL;
 
     /* announce and scrape requests have tiny payloads. */
     if( isScrape || isAnnounce )
@@ -142,16 +154,16 @@ getTimeoutFromURL( const struct tr_web_task * task )
 }
 
 static CURL *
-createEasy( tr_session * s, struct tr_web_task * task )
+createEasy( tr_session * s, struct tr_web * web, struct tr_web_task * task )
 {
+    bool is_default_value;
     const tr_address * addr;
-    tr_bool is_default_value;
-    CURL * e = curl_easy_init( );
-    const long verbose = getenv( "TR_CURL_VERBOSE" ) != NULL;
-    char * cookie_filename = tr_buildPath( s->configDir, "cookies.txt", NULL );
+    CURL * e = task->curl_easy = curl_easy_init( );
+
+    task->timeout_secs = getTimeoutFromURL( task );
 
     curl_easy_setopt( e, CURLOPT_AUTOREFERER, 1L );
-    curl_easy_setopt( e, CURLOPT_COOKIEFILE, cookie_filename );
+    curl_easy_setopt( e, CURLOPT_COOKIEFILE, web->cookie_filename );
     curl_easy_setopt( e, CURLOPT_ENCODING, "gzip;q=1.0, deflate, identity" );
     curl_easy_setopt( e, CURLOPT_FOLLOWLOCATION, 1L );
     curl_easy_setopt( e, CURLOPT_MAXREDIRS, -1L );
@@ -161,27 +173,33 @@ createEasy( tr_session * s, struct tr_web_task * task )
     curl_easy_setopt( e, CURLOPT_SOCKOPTFUNCTION, sockoptfunction );
     curl_easy_setopt( e, CURLOPT_SOCKOPTDATA, task );
 #endif
-    curl_easy_setopt( e, CURLOPT_SSL_VERIFYHOST, 0L );
-    curl_easy_setopt( e, CURLOPT_SSL_VERIFYPEER, 0L );
-    curl_easy_setopt( e, CURLOPT_TIMEOUT, getTimeoutFromURL( task ) );
+    if( web->curl_ssl_verify )
+        curl_easy_setopt( e, CURLOPT_CAINFO, web->curl_ca_bundle );
+    else {
+        curl_easy_setopt( e, CURLOPT_SSL_VERIFYHOST, 0L );
+        curl_easy_setopt( e, CURLOPT_SSL_VERIFYPEER, 0L );
+    }
+    curl_easy_setopt( e, CURLOPT_TIMEOUT, task->timeout_secs );
     curl_easy_setopt( e, CURLOPT_URL, task->url );
     curl_easy_setopt( e, CURLOPT_USERAGENT, TR_NAME "/" SHORT_VERSION_STRING );
-    curl_easy_setopt( e, CURLOPT_VERBOSE, verbose );
+    curl_easy_setopt( e, CURLOPT_VERBOSE, (long)(web->curl_verbose?1:0) );
     curl_easy_setopt( e, CURLOPT_WRITEDATA, task );
     curl_easy_setopt( e, CURLOPT_WRITEFUNCTION, writeFunc );
 
     if((( addr = tr_sessionGetPublicAddress( s, TR_AF_INET, &is_default_value ))) && !is_default_value )
-        curl_easy_setopt( e, CURLOPT_INTERFACE, tr_ntop_non_ts( addr ) );
+        curl_easy_setopt( e, CURLOPT_INTERFACE, tr_address_to_string( addr ) );
     else if ((( addr = tr_sessionGetPublicAddress( s, TR_AF_INET6, &is_default_value ))) && !is_default_value )
-        curl_easy_setopt( e, CURLOPT_INTERFACE, tr_ntop_non_ts( addr ) );
+        curl_easy_setopt( e, CURLOPT_INTERFACE, tr_address_to_string( addr ) );
 
-    if( task->range )
+    if( task->cookies != NULL )
+        curl_easy_setopt( e, CURLOPT_COOKIE, task->cookies );
+
+    if( task->range != NULL ) {
         curl_easy_setopt( e, CURLOPT_RANGE, task->range );
+        /* don't bother asking the server to compress webseed fragments */
+        curl_easy_setopt( e, CURLOPT_ENCODING, "identity" );
+    }
 
-    if( s->curl_easy_config_func != NULL )
-        s->curl_easy_config_func( s, e, task->url );
-
-    tr_free( cookie_filename );
     return e;
 }
 
@@ -197,6 +215,8 @@ task_finish_func( void * vtask )
 
     if( task->done_func != NULL )
         task->done_func( task->session,
+                         task->did_connect,
+                         task->did_timeout,
                          task->code,
                          evbuffer_pullup( task->response, -1 ),
                          evbuffer_get_length( task->response ),
@@ -209,22 +229,24 @@ task_finish_func( void * vtask )
 *****
 ****/
 
-void
+struct tr_web_task *
 tr_webRun( tr_session         * session,
            const char         * url,
            const char         * range,
+           const char         * cookies,
            tr_web_done_func     done_func,
            void               * done_func_user_data )
 {
-    tr_webRunWithBuffer( session, url, range,
-                         done_func, done_func_user_data,
-                         NULL );
+    return tr_webRunWithBuffer( session, url, range, cookies,
+                                done_func, done_func_user_data,
+                                NULL );
 }
 
-void
+struct tr_web_task *
 tr_webRunWithBuffer( tr_session         * session,
                      const char         * url,
                      const char         * range,
+                     const char         * cookies,
                      tr_web_done_func     done_func,
                      void               * done_func_user_data,
                      struct evbuffer    * buffer )
@@ -238,15 +260,19 @@ tr_webRunWithBuffer( tr_session         * session,
         task->session = session;
         task->url = tr_strdup( url );
         task->range = tr_strdup( range );
+        task->cookies = tr_strdup( cookies);
         task->done_func = done_func;
         task->done_func_user_data = done_func_user_data;
         task->response = buffer ? buffer : evbuffer_new( );
         task->freebuf = buffer ? NULL : task->response;
 
         tr_lockLock( web->taskLock );
-        tr_list_append( &web->tasks, task );
+        task->next = web->tasks;
+        web->tasks = task;
         tr_lockUnlock( web->taskLock );
+        return task;
     }
+    return NULL;
 }
 
 /**
@@ -285,10 +311,10 @@ tr_select( int nfds,
 static void
 tr_webThreadFunc( void * vsession )
 {
-    int unused;
     CURLM * multi;
     struct tr_web * web;
     int taskCount = 0;
+    struct tr_web_task * task;
     tr_session * session = vsession;
 
     /* try to enable ssl for https support; but if that fails,
@@ -300,27 +326,43 @@ tr_webThreadFunc( void * vsession )
     web->close_mode = ~0;
     web->taskLock = tr_lockNew( );
     web->tasks = NULL;
+    web->curl_verbose = getenv( "TR_CURL_VERBOSE" ) != NULL;
+    web->curl_ssl_verify = getenv( "TR_CURL_SSL_VERIFY" ) != NULL;
+    web->curl_ca_bundle = getenv( "CURL_CA_BUNDLE" );
+    if( web->curl_ssl_verify ) {
+        tr_ninf( "web", "will verify tracker certs using envvar CURL_CA_BUNDLE: %s",
+                  web->curl_ca_bundle == NULL ? "none" : web->curl_ca_bundle );
+        tr_ninf( "web", "NB: this only works if you built against libcurl with openssl or gnutls, NOT nss" );
+        tr_ninf( "web", "NB: invalid certs will show up as 'Could not connect to tracker' like many other errors" );
+    }
+    web->cookie_filename = tr_buildPath( session->configDir, "cookies.txt", NULL );
+
     multi = curl_multi_init( );
     session->web = web;
 
     for( ;; )
     {
         long msec;
+        int unused;
         CURLMsg * msg;
         CURLMcode mcode;
-        struct tr_web_task * task;
 
         if( web->close_mode == TR_WEB_CLOSE_NOW )
             break;
-        if( ( web->close_mode == TR_WEB_CLOSE_WHEN_IDLE ) && !taskCount )
+        if( ( web->close_mode == TR_WEB_CLOSE_WHEN_IDLE ) && ( web->tasks == NULL ) )
             break;
 
         /* add tasks from the queue */
         tr_lockLock( web->taskLock );
-        while(( task = tr_list_pop_front( &web->tasks )))
+        while( web->tasks != NULL )
         {
+            /* pop the task */
+            task = web->tasks;
+            web->tasks = task->next;
+            task->next = NULL;
+
             dbgmsg( "adding task to curl: [%s]", task->url );
-            curl_multi_add_handle( multi, createEasy( session, task ));
+            curl_multi_add_handle( multi, createEasy( session, web, task ));
             /*fprintf( stderr, "adding a task.. taskCount is now %d\n", taskCount );*/
             ++taskCount;
         }
@@ -331,6 +373,8 @@ tr_webThreadFunc( void * vsession )
         curl_multi_timeout( multi, &msec );
         if( msec < 0 )
             msec = THREADFUNC_MAX_SLEEP_MSEC;
+        if( session->isClosed )
+            msec = 100; /* on shutdown, call perform() more frequently */
         if( msec > 0 )
         {
             int usec;
@@ -350,7 +394,6 @@ tr_webThreadFunc( void * vsession )
             usec = msec * 1000;
             t.tv_sec =  usec / 1000000;
             t.tv_usec = usec % 1000000;
-
             tr_select( max_fd+1, &r_fd_set, &w_fd_set, &c_fd_set, &t );
         }
 
@@ -364,10 +407,16 @@ tr_webThreadFunc( void * vsession )
         {
             if(( msg->msg == CURLMSG_DONE ) && ( msg->easy_handle != NULL ))
             {
+                double total_time;
                 struct tr_web_task * task;
+                long req_bytes_sent;
                 CURL * e = msg->easy_handle;
                 curl_easy_getinfo( e, CURLINFO_PRIVATE, (void*)&task );
                 curl_easy_getinfo( e, CURLINFO_RESPONSE_CODE, &task->code );
+                curl_easy_getinfo( e, CURLINFO_REQUEST_SIZE, &req_bytes_sent );
+                curl_easy_getinfo( e, CURLINFO_TOTAL_TIME, &total_time );
+                task->did_connect = task->code>0 || req_bytes_sent>0;
+                task->did_timeout = !task->code && ( total_time >= task->timeout_secs );
                 curl_multi_remove_handle( multi, e );
                 curl_easy_cleanup( e );
 /*fprintf( stderr, "removing a completed task.. taskCount is now %d (response code: %d, response len: %d)\n", taskCount, (int)task->code, (int)evbuffer_get_length(task->response) );*/
@@ -377,9 +426,19 @@ tr_webThreadFunc( void * vsession )
         }
     }
 
+    /* Discard any remaining tasks.
+     * This is rare, but can happen on shutdown with unresponsive trackers. */
+    while( web->tasks != NULL ) {
+        task = web->tasks;
+        web->tasks = task->next;
+        dbgmsg( "Discarding task \"%s\"", task->url );
+        task_free( task );
+    }
+
     /* cleanup */
     curl_multi_cleanup( multi );
     tr_lockFree( web->taskLock );
+    tr_free( web->cookie_filename );
     tr_free( web );
     session->web = NULL;
 }
@@ -401,6 +460,12 @@ tr_webClose( tr_session * session, tr_web_close_mode close_mode )
             while( session->web != NULL )
                 tr_wait_msec( 100 );
     }
+}
+
+void
+tr_webGetTaskInfo( struct tr_web_task * task, tr_web_task_info info, void * dst )
+{
+    curl_easy_getinfo( task->curl_easy, (CURLINFO) info, dst );
 }
 
 /*****
@@ -460,7 +525,7 @@ tr_webGetResponseStr( long code )
 
 void
 tr_http_escape( struct evbuffer  * out,
-                const char * str, int len, tr_bool escape_slashes )
+                const char * str, int len, bool escape_slashes )
 {
     const char * end;
 
@@ -475,7 +540,7 @@ tr_http_escape( struct evbuffer  * out,
             || ( ( 'A' <= *str ) && ( *str <= 'Z' ) )
             || ( ( 'a' <= *str ) && ( *str <= 'z' ) )
             || ( ( *str == '/' ) && ( !escape_slashes ) ) )
-            evbuffer_add( out, str, 1 );
+            evbuffer_add_printf( out, "%c", *str );
         else
             evbuffer_add_printf( out, "%%%02X", (unsigned)(*str&0xFF) );
     }
@@ -488,4 +553,31 @@ tr_http_unescape( const char * str, int len )
     char * ret = tr_strdup( tmp );
     curl_free( tmp );
     return ret;
+}
+
+static int
+is_rfc2396_alnum( uint8_t ch )
+{
+    return ( '0' <= ch && ch <= '9' )
+        || ( 'A' <= ch && ch <= 'Z' )
+        || ( 'a' <= ch && ch <= 'z' )
+        || ch == '.'
+        || ch == '-'
+        || ch == '_'
+        || ch == '~';
+}
+
+void
+tr_http_escape_sha1( char * out, const uint8_t * sha1_digest )
+{
+    const uint8_t * in = sha1_digest;
+    const uint8_t * end = in + SHA_DIGEST_LENGTH;
+
+    while( in != end )
+        if( is_rfc2396_alnum( *in ) )
+            *out++ = (char) *in++;
+        else
+            out += tr_snprintf( out, 4, "%%%02x", (unsigned int)*in++ );
+
+    *out = '\0';
 }

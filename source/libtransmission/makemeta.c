@@ -7,19 +7,21 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: makemeta.c 11709 2011-01-19 13:48:47Z jordan $
+ * $Id: makemeta.c 12581 2011-07-24 20:18:33Z jordan $
  */
 
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h> /* FILE, stderr */
 #include <stdlib.h> /* qsort */
-#include <string.h> /* strcmp, strlen, strcasecmp */
+#include <string.h> /* strcmp, strlen */
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
+#include <unistd.h> /* read() */
 #include <dirent.h>
+
+#include <event2/util.h> /* evutil_ascii_strcasecmp() */
 
 #include "transmission.h"
 #include "crypto.h" /* tr_sha1 */
@@ -27,7 +29,7 @@
 #include "session.h"
 #include "bencode.h"
 #include "makemeta.h"
-#include "platform.h" /* threads, locks, TR_PATH_MAX */
+#include "platform.h" /* threads, locks */
 #include "utils.h" /* buildpath */
 #include "version.h"
 
@@ -76,10 +78,7 @@ getFiles( const char *      dir,
     {
         struct FileList * node = tr_new( struct FileList, 1 );
         node->size = sb.st_size;
-        if( ( buf[0] == '.' ) && ( buf[1] == '/' ) )
-            node->filename = tr_strdup( buf + 2 );
-        else
-            node->filename = tr_strdup( buf );
+        node->filename = tr_strdup( buf );
         node->next = list;
         list = node;
     }
@@ -91,36 +90,38 @@ getFiles( const char *      dir,
 static uint32_t
 bestPieceSize( uint64_t totalSize )
 {
-    const uint32_t GiB = 1073741824;
-    const uint32_t MiB = 1048576;
     const uint32_t KiB = 1024;
+    const uint32_t MiB = 1048576;
+    const uint32_t GiB = 1073741824;
 
-    if( totalSize >=   ( 2 * GiB ) ) return 2 * MiB;
-    if( totalSize >=   ( 1 * GiB ) ) return 1 * MiB;
+    if( totalSize >=   ( 2 * GiB ) ) return   2 * MiB;
+    if( totalSize >=   ( 1 * GiB ) ) return   1 * MiB;
     if( totalSize >= ( 512 * MiB ) ) return 512 * KiB;
     if( totalSize >= ( 350 * MiB ) ) return 256 * KiB;
     if( totalSize >= ( 150 * MiB ) ) return 128 * KiB;
-    if( totalSize >=  ( 50 * MiB ) ) return 64 * KiB;
+    if( totalSize >=  ( 50 * MiB ) ) return  64 * KiB;
     return 32 * KiB;  /* less than 50 meg */
 }
 
 static int
-builderFileCompare( const void * va,
-                    const void * vb )
+builderFileCompare( const void * va, const void * vb )
 {
     const tr_metainfo_builder_file * a = va;
     const tr_metainfo_builder_file * b = vb;
 
-    return strcasecmp( a->filename, b->filename );
+    return evutil_ascii_strcasecmp( a->filename, b->filename );
 }
 
 tr_metainfo_builder*
-tr_metaInfoBuilderCreate( const char * topFile )
+tr_metaInfoBuilderCreate( const char * topFileArg )
 {
-    int                   i;
-    struct FileList *     files;
-    struct FileList *     walk;
+    int i;
+    struct FileList * files;
+    struct FileList * walk;
+    char topFile[TR_PATH_MAX];
     tr_metainfo_builder * ret = tr_new0( tr_metainfo_builder, 1 );
+
+    tr_realpath( topFileArg, topFile );
 
     ret->top = tr_strdup( topFile );
 
@@ -162,9 +163,7 @@ tr_metaInfoBuilderCreate( const char * topFile )
            builderFileCompare );
 
     ret->pieceSize = bestPieceSize( ret->totalSize );
-    ret->pieceCount = ret->pieceSize
-                      ? (int)( ret->totalSize / ret->pieceSize )
-                      : 0;
+    ret->pieceCount = (int)( ret->totalSize / ret->pieceSize );
     if( ret->totalSize % ret->pieceSize )
         ++ret->pieceCount;
 
@@ -235,10 +234,10 @@ getHashInfo( tr_metainfo_builder * b )
         while( leftInPiece )
         {
             const size_t n_this_pass = (size_t) MIN( ( b->files[fileIndex].size - off ), leftInPiece );
-            read( fd, bufptr, n_this_pass );
-            bufptr += n_this_pass;
-            off += n_this_pass;
-            leftInPiece -= n_this_pass;
+            const ssize_t n_read = read( fd, bufptr, n_this_pass );
+            bufptr += n_read;
+            off += n_read;
+            leftInPiece -= n_read;
             if( off == b->files[fileIndex].size )
             {
                 off = 0;
@@ -382,7 +381,7 @@ tr_realMakeMetaInfo( tr_metainfo_builder * builder )
         builder->errfile[0] = '\0';
         builder->my_errno = ENOENT;
         builder->result = TR_MAKEMETA_IO_READ;
-        builder->isDone = TRUE;
+        builder->isDone = true;
     }
 
     if( !builder->result && builder->trackerCount )

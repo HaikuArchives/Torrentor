@@ -7,12 +7,16 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: blocklist.c 11709 2011-01-19 13:48:47Z jordan $
+ * $Id: blocklist.c 12229 2011-03-25 05:34:26Z jordan $
  */
 
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h> /* free() */
+#include <stdlib.h> /* bsearch(), qsort() */
 #include <string.h>
+
+#include <unistd.h> /* unlink() */
 
 #ifdef WIN32
  #include <w32api.h>
@@ -28,11 +32,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <assert.h>
 
 #include "transmission.h"
-#include "platform.h"
 #include "blocklist.h"
 #include "net.h"
 #include "utils.h"
@@ -46,7 +47,7 @@
 ****  PRIVATE
 ***/
 
-struct tr_ip_range
+struct tr_ipv4_range
 {
     uint32_t    begin;
     uint32_t    end;
@@ -54,12 +55,12 @@ struct tr_ip_range
 
 struct tr_blocklist
 {
-    tr_bool               isEnabled;
-    int                   fd;
-    size_t                ruleCount;
-    size_t                byteCount;
-    char *                filename;
-    struct tr_ip_range *  rules;
+    bool                   isEnabled;
+    int                    fd;
+    size_t                 ruleCount;
+    size_t                 byteCount;
+    char *                 filename;
+    struct tr_ipv4_range * rules;
 };
 
 static void
@@ -107,7 +108,7 @@ blocklistLoad( tr_blocklist * b )
 
     b->fd = fd;
     b->byteCount = byteCount;
-    b->ruleCount = byteCount / sizeof( struct tr_ip_range );
+    b->ruleCount = byteCount / sizeof( struct tr_ipv4_range );
 
     {
         char * base = tr_basename( b->filename );
@@ -127,8 +128,8 @@ static int
 compareAddressToRange( const void * va,
                        const void * vb )
 {
-    const uint32_t *           a = va;
-    const struct tr_ip_range * b = vb;
+    const uint32_t *             a = va;
+    const struct tr_ipv4_range * b = vb;
 
     if( *a < b->begin ) return -1;
     if( *a > b->end ) return 1;
@@ -147,7 +148,7 @@ blocklistDelete( tr_blocklist * b )
 ***/
 
 tr_blocklist *
-_tr_blocklistNew( const char * filename, tr_bool isEnabled )
+_tr_blocklistNew( const char * filename, bool isEnabled )
 {
     tr_blocklist * b;
 
@@ -196,20 +197,18 @@ _tr_blocklistIsEnabled( tr_blocklist * b )
 }
 
 void
-_tr_blocklistSetEnabled( tr_blocklist * b,
-                         int            isEnabled )
+_tr_blocklistSetEnabled( tr_blocklist * b, bool isEnabled )
 {
     b->isEnabled = isEnabled ? 1 : 0;
 }
 
 int
-_tr_blocklistHasAddress( tr_blocklist     * b,
-                         const tr_address * addr )
+_tr_blocklistHasAddress( tr_blocklist * b, const tr_address * addr )
 {
-    uint32_t                   needle;
-    const struct tr_ip_range * range;
+    uint32_t                     needle;
+    const struct tr_ipv4_range * range;
 
-    assert( tr_isAddress( addr ) );
+    assert( tr_address_is_valid( addr ) );
 
     if( !b->isEnabled || addr->type == TR_AF_INET6 )
         return 0;
@@ -224,7 +223,7 @@ _tr_blocklistHasAddress( tr_blocklist     * b,
     range = bsearch( &needle,
                      b->rules,
                      b->ruleCount,
-                     sizeof( struct tr_ip_range ),
+                     sizeof( struct tr_ipv4_range ),
                      compareAddressToRange );
 
     return range != NULL;
@@ -235,8 +234,8 @@ _tr_blocklistHasAddress( tr_blocklist     * b,
  * http://wiki.phoenixlabs.org/wiki/P2P_Format
  * http://en.wikipedia.org/wiki/PeerGuardian#P2P_plaintext_format
  */
-static tr_bool
-parseLine1( const char * line, struct tr_ip_range * range )
+static bool
+parseLine1( const char * line, struct tr_ipv4_range * range )
 {
     char * walk;
     int b[4];
@@ -246,33 +245,33 @@ parseLine1( const char * line, struct tr_ip_range * range )
 
     walk = strrchr( line, ':' );
     if( !walk )
-        return FALSE;
+        return false;
     ++walk; /* walk past the colon */
 
     if( sscanf( walk, "%d.%d.%d.%d-%d.%d.%d.%d",
                 &b[0], &b[1], &b[2], &b[3],
                 &e[0], &e[1], &e[2], &e[3] ) != 8 )
-        return FALSE;
+        return false;
 
     tr_snprintf( str, sizeof( str ), "%d.%d.%d.%d", b[0], b[1], b[2], b[3] );
-    if( tr_pton( str, &addr ) == NULL )
-        return FALSE;
+    if( !tr_address_from_string( &addr, str ) )
+        return false;
     range->begin = ntohl( addr.addr.addr4.s_addr );
 
     tr_snprintf( str, sizeof( str ), "%d.%d.%d.%d", e[0], e[1], e[2], e[3] );
-    if( tr_pton( str, &addr ) == NULL )
-        return FALSE;
+    if( !tr_address_from_string( &addr, str ) )
+        return false;
     range->end = ntohl( addr.addr.addr4.s_addr );
 
-    return TRUE;
+    return true;
 }
 
 /*
  * DAT format: "000.000.000.000 - 000.255.255.255 , 000 , invalid ip"
  * http://wiki.phoenixlabs.org/wiki/DAT_Format
  */
-static tr_bool
-parseLine2( const char * line, struct tr_ip_range * range )
+static bool
+parseLine2( const char * line, struct tr_ipv4_range * range )
 {
     int unk;
     int a[4];
@@ -284,38 +283,49 @@ parseLine2( const char * line, struct tr_ip_range * range )
                 &a[0], &a[1], &a[2], &a[3],
                 &b[0], &b[1], &b[2], &b[3],
                 &unk ) != 9 )
-        return FALSE;
+        return false;
 
     tr_snprintf( str, sizeof(str), "%d.%d.%d.%d", a[0], a[1], a[2], a[3] );
-    if( tr_pton( str, &addr ) == NULL )
-        return FALSE;
+    if( !tr_address_from_string( &addr, str ) )
+        return false;
     range->begin = ntohl( addr.addr.addr4.s_addr );
 
     tr_snprintf( str, sizeof(str), "%d.%d.%d.%d", b[0], b[1], b[2], b[3] );
-    if( tr_pton( str, &addr ) == NULL )
-        return FALSE;
+    if( !tr_address_from_string( &addr, str ) )
+        return false;
     range->end = ntohl( addr.addr.addr4.s_addr );
 
-    return TRUE;
+    return true;
 }
 
 static int
-parseLine( const char * line, struct tr_ip_range * range )
+parseLine( const char * line, struct tr_ipv4_range * range )
 {
     return parseLine1( line, range )
         || parseLine2( line, range );
 }
 
+static int
+compareAddressRangesByFirstAddress( const void * va, const void * vb )
+{
+    const struct tr_ipv4_range * a = va;
+    const struct tr_ipv4_range * b = vb;
+    if( a->begin != b->begin )
+        return a->begin < b->begin ? -1 : 1;
+    return 0;
+}
+
 int
-_tr_blocklistSetContent( tr_blocklist * b,
-                         const char *   filename )
+_tr_blocklistSetContent( tr_blocklist * b, const char * filename )
 {
     FILE * in;
     FILE * out;
     int inCount = 0;
-    int outCount = 0;
     char line[2048];
     const char * err_fmt = _( "Couldn't read \"%1$s\": %2$s" );
+    struct tr_ipv4_range * ranges = NULL;
+    size_t ranges_alloc = 0;
+    size_t ranges_count = 0;
 
     if( !filename )
     {
@@ -340,10 +350,11 @@ _tr_blocklistSetContent( tr_blocklist * b,
         return 0;
     }
 
+    /* load the rules into memory */
     while( fgets( line, sizeof( line ), in ) != NULL )
     {
         char * walk;
-        struct tr_ip_range range;
+        struct tr_ipv4_range range;
 
         ++inCount;
 
@@ -358,27 +369,63 @@ _tr_blocklistSetContent( tr_blocklist * b,
             continue;
         }
 
-        if( fwrite( &range, sizeof( struct tr_ip_range ), 1, out ) != 1 )
+        if( ranges_alloc == ranges_count )
         {
-            tr_err( _( "Couldn't save file \"%1$s\": %2$s" ), b->filename,
-                   tr_strerror( errno ) );
-            break;
+            ranges_alloc += 4096; /* arbitrary */
+            ranges = tr_renew( struct tr_ipv4_range, ranges, ranges_alloc );
         }
 
-        ++outCount;
+        ranges[ranges_count++] = range;
     }
 
+    if( ranges_count > 0 ) /* sort and merge */
     {
+        struct tr_ipv4_range * r;
+        struct tr_ipv4_range * keep = ranges;
+        const struct tr_ipv4_range * end;
+
+        /* sort */
+        qsort( ranges, ranges_count, sizeof( struct tr_ipv4_range ),
+               compareAddressRangesByFirstAddress );
+
+        /* merge */
+        for( r=ranges+1, end=ranges+ranges_count; r!=end; ++r ) {
+            if( keep->end < r->begin )
+                *++keep = *r;
+            else if( keep->end < r->end )
+                keep->end = r->end;
+        }
+
+        ranges_count = keep + 1 - ranges;
+
+#ifndef NDEBUG
+        /* sanity checks: make sure the rules are sorted
+         * in ascending order and don't overlap */
+        {
+            size_t i;
+
+            for( i=0; i<ranges_count; ++i )
+                assert( ranges[i].begin <= ranges[i].end );
+
+            for( i=1; i<ranges_count; ++i )
+                assert( ranges[i-1].end < ranges[i].begin );
+        }
+#endif
+    }
+
+    if( fwrite( ranges, sizeof( struct tr_ipv4_range ), ranges_count, out ) != ranges_count )
+        tr_err( _( "Couldn't save file \"%1$s\": %2$s" ), b->filename, tr_strerror( errno ) );
+    else {
         char * base = tr_basename( b->filename );
-        tr_inf( _( "Blocklist \"%s\" updated with %d entries" ), base, outCount );
+        tr_inf( _( "Blocklist \"%s\" updated with %zu entries" ), base, ranges_count );
         tr_free( base );
     }
 
+    tr_free( ranges );
     fclose( out );
     fclose( in );
 
     blocklistLoad( b );
 
-    return outCount;
+    return ranges_count;
 }
-

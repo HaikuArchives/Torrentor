@@ -7,7 +7,7 @@
  * This exemption does not extend to derived works not owned by
  * the Transmission project.
  *
- * $Id: platform.h 11709 2011-01-19 13:48:47Z jordan $
+ * $Id: platform.h 13029 2011-10-25 15:57:10Z jordan $
  */
 
 #ifndef __TRANSMISSION__
@@ -19,18 +19,6 @@
 
 #define TR_PATH_DELIMITER '/'
 #define TR_PATH_DELIMITER_STR "/"
-
-#ifdef WIN32
- #include <windef.h> /* MAX_PATH */
- #define TR_PATH_MAX (MAX_PATH + 1)
-#else
- #include <limits.h> /* PATH_MAX */
- #ifdef PATH_MAX
-  #define TR_PATH_MAX PATH_MAX
- #else
-  #define TR_PATH_MAX 4096
- #endif
-#endif
 
 /**
  * @addtogroup tr_session Session
@@ -73,7 +61,7 @@ tr_thread* tr_threadNew( void ( *func )(void *), void * arg );
 
 /** @brief Return nonzero if this function is being called from `thread'
     @param thread the thread being tested */
-tr_bool tr_amInThread( const tr_thread * );
+bool tr_amInThread( const tr_thread * );
 
 /***
 ****

@@ -9,7 +9,7 @@
 #define __MINIUPNPCSTRINGS_H__
 
 #define OS_STRING "Haiku"
-#define MINIUPNPC_VERSION_STRING "1.4"
+#define MINIUPNPC_VERSION_STRING "1.7"
 
 
 #endif

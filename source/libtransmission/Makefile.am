@@ -1,12 +1,13 @@
 AM_CPPFLAGS = \
-    -I. \
     -I$(top_srcdir) \
-    -I$(top_srcdir)/third-party/ \
     -D__TRANSMISSION__ \
     -DPACKAGE_DATA_DIR=\""$(datadir)"\"
 
 AM_CFLAGS = \
     @DHT_CFLAGS@ \
+    @LIBUTP_CFLAGS@ \
+    @LIBUPNP_CFLAGS@ \
+    @LIBNATPMP_CFLAGS@ \
     @LIBEVENT_CFLAGS@ \
     @LIBCURL_CFLAGS@ \
     @OPENSSL_CFLAGS@ \
@@ -17,6 +18,8 @@ noinst_LIBRARIES = libtransmission.a
 
 libtransmission_a_SOURCES = \
     announcer.c \
+    announcer-http.c \
+    announcer-udp.c \
     bandwidth.c \
     bencode.c \
     bitfield.c \
@@ -44,7 +47,6 @@ libtransmission_a_SOURCES = \
     platform.c \
     port-forwarding.c \
     ptrarray.c \
-    ratecontrol.c \
     resume.c \
     rpcimpl.c \
     rpc-server.c \
@@ -56,6 +58,7 @@ libtransmission_a_SOURCES = \
     tr-dht.c \
     tr-lpd.c \
     tr-udp.c \
+    tr-utp.c \
     tr-getopt.c \
     trevent.c \
     upnp.c \
@@ -67,10 +70,10 @@ libtransmission_a_SOURCES = \
 
 noinst_HEADERS = \
     announcer.h \
+    announcer-common.h \
     bandwidth.h \
     bencode.h \
     bitfield.h \
-    bitset.h \
     blocklist.h \
     cache.h \
     clients.h \
@@ -87,7 +90,7 @@ noinst_HEADERS = \
     magnet.h \
     makemeta.h \
     metainfo.h \
-    natpmp.h \
+    natpmp_local.h \
     net.h \
     peer-common.h \
     peer-io.h \
@@ -96,7 +99,6 @@ noinst_HEADERS = \
     platform.h \
     port-forwarding.h \
     ptrarray.h \
-    ratecontrol.h \
     resume.h \
     rpcimpl.h \
     rpc-server.h \
@@ -108,6 +110,7 @@ noinst_HEADERS = \
     transmission.h \
     tr-dht.h \
     tr-udp.h \
+    tr-utp.h \
     tr-lpd.h \
     trevent.h \
     upnp.h \
@@ -136,10 +139,11 @@ apps_ldflags = \
 
 apps_ldadd = \
     ./libtransmission.a  \
-    $(top_builddir)/third-party/miniupnp/libminiupnp.a \
-    $(top_builddir)/third-party/libnatpmp/libnatpmp.a \
+    @LIBUPNP_LIBS@ \
+    @LIBNATPMP_LIBS@ \
     @INTLLIBS@ \
     @DHT_LIBS@ \
+    @LIBUTP_LIBS@ \
     @LIBCURL_LIBS@ \
     @LIBEVENT_LIBS@ \
     @OPENSSL_LIBS@ \

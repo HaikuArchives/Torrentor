@@ -73,7 +73,7 @@ Application Torrentor :
 	libnatpmp.a
 	libminiupnp.a
 	libdht.a
-    
+    libutp.a
     InterfaceKitEx.a
     
     : 

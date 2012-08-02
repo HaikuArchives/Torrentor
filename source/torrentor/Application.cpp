@@ -70,7 +70,7 @@ TorrentorApp::TorrentorApp()
 	
  
  	tr_bencInitDict(&fTorrentPreferences, 0 );
- 	tr_sessionGetDefaultSettings(NULL, &fTorrentPreferences);
+ 	tr_sessionGetDefaultSettings(&fTorrentPreferences);
  	
  	
  	configDir = tr_getDefaultConfigDir("Torrentor");

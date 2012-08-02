@@ -1,0 +1,18 @@
+SubDir PROJECT_TOP source third_party libutp ;
+
+
+#
+# To turn off debugging symbols export NDEBUG=1 in the environment
+#
+SubDirC++Flags -Wno-c++0x-compat -fno-exceptions -fno-rtti -ansi -DPOSIX ;
+#SubDirC++Flags $(defines) -Wno-c++0x-compat ;
+
+
+#-----------------------------------------------------------------------------
+# 
+#-----------------------------------------------------------------------------
+
+StaticLibrary libutp :
+	utp.cpp 
+	utp_utils.cpp
+;
