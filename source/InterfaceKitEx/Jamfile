@@ -1,0 +1,12 @@
+SubDir PROJECT_TOP source InterfaceKitEx ;
+
+
+SubDirC++Flags -Wno-c++0x-compat ;
+SubDirCcFlags -Wno-c++0x-compat ;
+
+
+
+StaticLibrary InterfaceKitEx.a :
+	ColumnListView.cpp
+	ColumnTypes.cpp
+;

@@ -1,0 +1,81 @@
+SubDir PROJECT_TOP source torrentor ;
+
+local defines = [ FDefines BUILDING_HAIKU__=1 ] ;
+
+#
+# To turn off debugging symbols export NDEBUG=1 in the environment
+#
+SubDirC++Flags $(defines) -Wno-c++0x-compat ;
+SubDirCcFlags $(defines) -Wno-c++0x-compat ;
+
+#
+# Define header locations
+#
+#SubDirSysHdrs $(PROJECT_TOP) source libtransmission ;
+SubDirSysHdrs $(PROJECT_TOP) source ;
+SubDirSysHdrs $(PROJECT_TOP) source InterfaceKitEx ;
+
+
+#SubDirSysHdrs $(TOP) ;
+#SubDirSysHdrs $(TOP) SampleCode ;
+
+#SubDirHdrs $(PROJECT_TOP) ;
+
+#SubDirHdrs $(TOP) JavaScriptCore API ;
+#SubDirHdrs $(TOP) JavaScriptCore DerivedSources JavaScriptCore ;
+
+echo $(HAIKU_OPENSSL_LIBS) ;
+
+#-----------------------------------------------------------------------------
+# Application Torrentor.
+#-----------------------------------------------------------------------------
+
+Application Torrentor :
+	main.cpp
+	Application.cpp
+	MainWindow.cpp
+	ToolBar.cpp
+	IconView.cpp
+	SymbolButton.cpp
+	DownloadItem.cpp
+	DownloadView.cpp
+	PreferencesWindow.cpp
+	FolderSelect.cpp
+	
+	#
+	# Torrent Inspector
+	#
+	InfoWindow.cpp
+	PiecesView.cpp
+	InfoPeerView.cpp
+	InfoFileView.cpp
+	
+	#
+	TorrentObject.cpp
+	TorrentRefFilter.cpp
+	
+	#
+	IconUtil.cpp
+	FormatText.cpp
+
+    : 
+    stdc++ network z be tracker
+
+	libtransmission.a
+	
+	#
+	# Find a better way to resolve libs.
+	#
+	/boot/common/lib/libcrypto.so
+	/boot/common/lib/libssl.so
+	/boot/common/lib/libcurl.so
+	/boot/common/lib/libevent.so
+	libnatpmp.a
+	libminiupnp.a
+	libdht.a
+    
+    InterfaceKitEx.a
+    
+    : 
+    Torrentor.rdef
+;

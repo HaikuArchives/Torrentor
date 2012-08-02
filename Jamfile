@@ -1,0 +1,26 @@
+SubDir PROJECT_TOP ;
+
+#
+#
+#
+#SubInclude PROJECT_TOP source third_party libevent ;
+SubInclude PROJECT_TOP source third_party dht ;
+SubInclude PROJECT_TOP source third_party miniupnp ;
+SubInclude PROJECT_TOP source third_party libnatpmp ;
+SubInclude PROJECT_TOP source libtransmission ;
+#
+#
+SubInclude PROJECT_TOP source InterfaceKitEx ;
+SubInclude PROJECT_TOP source torrentor ;
+
+
+
+#-----------------------------------------------------------------------------
+# Installation rules
+#-----------------------------------------------------------------------------
+
+Install Torrent :
+
+;
+
+

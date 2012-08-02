@@ -1,0 +1,22 @@
+IS_GCC_4_PLATFORM = true ;
+KEEPOBJS = true ;
+
+#
+# The directories used by the build
+#
+if ( $(NDEBUG) ) {
+	PROJECT_BUILD_DIR 			= [ FDirName $(PROJECT_TOP) build ] ;
+	PROJECT_BUILD_OUTPUT_DIR	= [ FDirName $(PROJECT_TOP) build Release ] ;
+} else {
+	PROJECT_BUILD_DIR 			= [ FDirName $(PROJECT_TOP) build ] ;
+	PROJECT_BUILD_OUTPUT_DIR 	= [ FDirName $(PROJECT_TOP) build Debug ] ;
+}
+
+#
+# Include the rules
+#
+include [ FDirName $(PROJECT_BUILD_DIR) ConfigRules ] ;
+include [ FDirName $(PROJECT_BUILD_DIR) OverriddenJamRules ] ;
+include [ FDirName $(PROJECT_BUILD_DIR) MainBuildRules ] ;
+include [ FDirName $(PROJECT_BUILD_DIR) BuildSettings ] ;
+

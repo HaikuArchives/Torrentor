@@ -1,0 +1,3 @@
+*.rscr
+/build/Debug
+/build/Release
