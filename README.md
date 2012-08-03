@@ -5,7 +5,6 @@ Torrentor is a torrent client for the haiku operating system.
 
 Requirements
 -------
-
 To build Torrentor you need some libs which are optional packages.
 
 * OpenSSL -- $ installoptionalpackage openssl
@@ -15,4 +14,5 @@ To build Torrentor you need some libs which are optional packages.
 
 Build
 -------
+Be sure you're using gcc4, you can set this by running $ setgcc gcc4.
 To build torrentor, browse to the root source directory and run $ jam.

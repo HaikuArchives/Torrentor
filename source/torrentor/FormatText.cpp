@@ -190,7 +190,7 @@ void FormatProgressText(BString& Buffer, TorrentObject* torrent)
 			
 			FormatTimeText(EstimatedTimeBuffer, EstimatedTimeLeft);
 			
-			Buffer << " - " << EstimatedTimeBuffer << "remaining.";
+			Buffer << " - " << EstimatedTimeBuffer << " remaining.";
 		}
 	}
 }
