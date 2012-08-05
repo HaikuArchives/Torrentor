@@ -1,22 +1,9 @@
 SubDir PROJECT_TOP source third_party libnatpmp ;
 
-
-#
-# To turn off debugging symbols export NDEBUG=1 in the environment
-#
-SubDirCcFlags -DENABLE_STRNATPMPERR ;
-
-#
-# Define header locations
-#
-#SubDirSysHdrs $(TOP) ;
-#SubDirSysHdrs $(TOP) SampleCode ;
-
-
-
-#SubDirHdrs $(TOP) JavaScriptCore API ;
-#SubDirHdrs $(TOP) JavaScriptCore DerivedSources JavaScriptCore ;
-
+local defines = [ FDefines B_USE_POSITIVE_POSIX_ERRORS=1 
+				  FDefines ENABLE_STRNATPMPERR=1 ] ;
+				  
+SubDirCcFlags $(defines) ;
 
 
 #-----------------------------------------------------------------------------

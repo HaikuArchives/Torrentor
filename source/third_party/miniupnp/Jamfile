@@ -1,6 +1,8 @@
 SubDir PROJECT_TOP source third_party miniupnp ;
 
-SubDirCcFlags $(defines) -DNDEBUG ;
+local defines = [ FDefines B_USE_POSITIVE_POSIX_ERRORS=1  ] ;
+
+SubDirCcFlags $(defines) ;
 
 #-----------------------------------------------------------------------------
 # 

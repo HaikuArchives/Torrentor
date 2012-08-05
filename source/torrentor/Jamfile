@@ -1,6 +1,7 @@
 SubDir PROJECT_TOP source torrentor ;
 
-local defines = [ FDefines BUILDING_HAIKU__=1 ] ;
+local defines = [ FDefines BUILDING_HAIKU__=1 
+				  FDefines B_USE_POSITIVE_POSIX_ERRORS=1 ] ;
 
 #
 # To turn off debugging symbols export NDEBUG=1 in the environment
@@ -11,20 +12,11 @@ SubDirCcFlags $(defines) -Wno-c++0x-compat ;
 #
 # Define header locations
 #
-#SubDirSysHdrs $(PROJECT_TOP) source libtransmission ;
 SubDirSysHdrs $(PROJECT_TOP) source ;
 SubDirSysHdrs $(PROJECT_TOP) source InterfaceKitEx ;
 
 
-#SubDirSysHdrs $(TOP) ;
-#SubDirSysHdrs $(TOP) SampleCode ;
 
-#SubDirHdrs $(PROJECT_TOP) ;
-
-#SubDirHdrs $(TOP) JavaScriptCore API ;
-#SubDirHdrs $(TOP) JavaScriptCore DerivedSources JavaScriptCore ;
-
-echo $(HAIKU_OPENSSL_LIBS) ;
 
 #-----------------------------------------------------------------------------
 # Application Torrentor.
@@ -75,7 +67,7 @@ Application Torrentor :
 	libdht.a
     libutp.a
     InterfaceKitEx.a
-    
+    posix_error_mapper
     : 
     Torrentor.rdef
 ;

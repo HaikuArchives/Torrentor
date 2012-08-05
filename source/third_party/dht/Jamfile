@@ -1,11 +1,13 @@
 SubDir PROJECT_TOP source third_party dht ;
 
+local defines = [ FDefines B_USE_POSITIVE_POSIX_ERRORS=1 ] ;
+				  
+SubDirCcFlags $(defines) ;
+
 #-----------------------------------------------------------------------------
 # 
 #-----------------------------------------------------------------------------
 
 StaticLibrary libdht :
 	dht.c
-	:
-	network
 ;

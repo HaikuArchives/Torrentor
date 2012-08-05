@@ -1,11 +1,13 @@
 SubDir PROJECT_TOP source third_party libutp ;
 
+local defines = [ FDefines POSIX=1
+				  FDefines B_USE_POSITIVE_POSIX_ERRORS=1 
+				  FDefines ENABLE_STRNATPMPERR=1 ] ;
 
 #
 # To turn off debugging symbols export NDEBUG=1 in the environment
 #
-SubDirC++Flags -Wno-c++0x-compat -fno-exceptions -fno-rtti -ansi -DPOSIX ;
-#SubDirC++Flags $(defines) -Wno-c++0x-compat ;
+SubDirC++Flags -Wno-c++0x-compat -fno-exceptions -fno-rtti -ansi $(defines) ;
 
 
 #-----------------------------------------------------------------------------

@@ -2,7 +2,8 @@ SubDir PROJECT_TOP source libtransmission ;
 
 local defines = [ FDefines __TRANSMISSION__=1 
 				  FDefines HAVE_ZLIB=1 
-				  FDefines HAVE_MINIUPNP_16=1 ] ;
+				  FDefines HAVE_MINIUPNP_16=1 
+				  B_USE_POSITIVE_POSIX_ERRORS=1 ] ;
 
 
 SubDirCcFlags $(defines) ;
