@@ -319,6 +319,11 @@ DownloadItem::DownloadItem(DownloadView* parentView, TorrentObject* torrentObjec
 
 }
 
+DownloadItem::~DownloadItem()
+{
+	
+}
+
 void DownloadItem::AttachedToWindow()
 {
 	UpdateInfo();

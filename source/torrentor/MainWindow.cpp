@@ -68,6 +68,7 @@
 
 #include "PreferencesWindow.h"
 
+#include <Alert.h>
 
 
 enum 
@@ -77,6 +78,7 @@ enum
 	MENU_EDIT_PREFERENCES,
 	MENU_TORRENT_INSPECT,
 	MENU_TORRENT_OPEN_DOWNLOAD,
+	MENU_TORRENT_REMOVE,
 };
 
 
@@ -169,6 +171,16 @@ MainWindow::MainWindow(BRect frame)
 	CenterOnScreen();
 }
 
+MainWindow::~MainWindow()
+{
+	fPreferencesWindow->Lock();
+	fPreferencesWindow->QuitRequested();
+	fPreferencesWindow->Quit();
+	
+	delete fPreferencesWindow;
+	delete fOpenPanel;
+}
+
 void MainWindow::InitWindow()
 {
 }
@@ -243,7 +255,8 @@ void MainWindow::CreateMenuBar()
 	menu = new BMenu("Torrent");
 	menu->AddItem(new BMenuItem("Inspect", new BMessage(MENU_TORRENT_INSPECT)));
 	menu->AddItem(new BMenuItem("Open download folder", new BMessage(MENU_TORRENT_OPEN_DOWNLOAD)));
-	//menu->AddItem(new BSeparatorItem);
+	menu->AddItem(new BSeparatorItem);
+	menu->AddItem(new BMenuItem("Remove", new BMessage(MENU_TORRENT_REMOVE)));
 	//menu->AddItem(new BMenuItem("Select All", NULL));
 	
 	fMenuBar->AddItem(menu);
@@ -287,6 +300,9 @@ void MainWindow::MessageReceived(BMessage* message)
 		break;
 	case MENU_TORRENT_OPEN_DOWNLOAD:
 		OpenTorrentDownloadFolder();
+		break;
+	case MENU_TORRENT_REMOVE:
+		OnMenuTorrentRemove();
 		break;
 	default:
 		BWindow::MessageReceived(message);
@@ -360,6 +376,54 @@ void MainWindow::OpenTorrentDownloadFolder()
 		}
 	}
 */
+}
+
+//
+// @FIXME: TorrentObject::Remove.
+//
+int _RemoveFileHandler(const char* filename)
+{
+	BEntry entry(filename);
+	
+	entry.Remove();
+	
+	return 0;
+}
+
+void MainWindow::OnMenuTorrentRemove()
+{
+	//
+	//
+	//
+	if( const DownloadItem* selectedItem = fDownloadView->ItemSelected() )
+	{
+		//
+		// Ask if the user want to delete local data or the torrent only.
+		//
+		BAlert* alert = new BAlert("Remove torrent", "Remove the selected torrent?",
+    						"Cancel", "Remove torrent only", "Remove with data",
+    						B_WIDTH_AS_USUAL, B_OFFSET_SPACING, B_WARNING_ALERT);
+    						
+    	int32 buttonIndex 	= alert->Go();
+    	bool removeData 	= buttonIndex == 2;
+		
+		//
+		// Return if the user press cancel.
+		//
+		if( buttonIndex == 0 )
+			return;
+			
+		//
+		//
+		//
+		fDownloadView->RemoveItem(selectedItem);
+			
+		//
+		//
+		//
+		tr_torrentRemove(const_cast<tr_torrent*>(selectedItem->GetTorrentObject()->Handle()),
+						removeData, _RemoveFileHandler);
+	}
 }
 
 void MainWindow::Update()

@@ -36,7 +36,7 @@
 
 #include "TorrentObject.h"
 
-#include "PiecesView.h"
+#include "InfoTransferView.h"
 #include "InfoPeerView.h"
 #include "InfoFileView.h"
 #include "InfoWindow.h"
@@ -51,55 +51,52 @@
 #include <stdio.h>
 
 
+#include "InfoHeaderView.h"
 
 static const BRect kDefaultFrame = BRect(120, 80, 800, 600);
 
 
 InfoWindow::InfoWindow(const TorrentObject* torrent)
-	:	BWindow(kDefaultFrame, "Inspector", 
-				B_TITLED_WINDOW_LOOK,
+	:	BWindow(kDefaultFrame, "Torrent Info", 
+				B_FLOATING_WINDOW_LOOK,
 				B_NORMAL_WINDOW_FEEL, 
-				B_AUTO_UPDATE_SIZE_LIMITS | 
-				B_ASYNCHRONOUS_CONTROLS | 
-				B_NOT_ZOOMABLE),
+				B_AUTO_UPDATE_SIZE_LIMITS |
+				B_ASYNCHRONOUS_CONTROLS |
+				B_NOT_ZOOMABLE |
+				B_NOT_RESIZABLE |
+				B_PULSE_NEEDED ),
 		fTorrent(torrent)
 {
-	BString WindowTitle;
-	
-	WindowTitle.SetToFormat("Inspector - %s", fTorrent->Name());
-	
-	SetTitle(WindowTitle);
-	
+	SetPulseRate(1000000);
 	SetLayout(new BGroupLayout(B_VERTICAL));
 	
 	float spacing = be_control_look->DefaultItemSpacing();
 
-	BTabView* tabView = new BTabView("InspectorPages", B_WIDTH_FROM_LABEL);
+	fTabView = new BTabView("InfoPages", B_WIDTH_FROM_LABEL);
 	
 	//
 	//
 	//
-	tabView->AddTab(_CreateInfoPage(spacing));
-	tabView->AddTab(_CreateTrackerPage(spacing));
+	fTabView->AddTab(_CreateInfoPage(spacing));
+	fTabView->AddTab(_CreateTransferPage(spacing));
+	fTabView->AddTab(_CreateTrackerPage(spacing));
 	
-	tabView->AddTab(_CreatePeerPage(spacing));
-	tabView->AddTab(_CreateFilesPage(spacing));
-
+	fTabView->AddTab(_CreatePeerPage(spacing));
+	fTabView->AddTab(_CreateFilesPage(spacing));
+		
+	
 	//
 	//
 	//
 	AddChild(BGroupLayoutBuilder(B_VERTICAL, spacing)
-		.Add(tabView)
+		.Add(new InfoHeaderView(fTorrent))
+		.Add(fTabView)
 		.SetInsets(spacing, spacing, spacing, spacing)
 	);
 	
 	CenterOnScreen();
-	
-	
 	Run();
-	
 }
-
 
 
 BView* InfoWindow::_CreateInfoPage(float spacing)
@@ -129,6 +126,19 @@ BView* InfoWindow::_CreateInfoPage(float spacing)
 		.TopView()
 	;
 	view->SetName("Info");
+	return view;
+}
+
+BView* InfoWindow::_CreateTransferPage(float spacing)
+{
+	fTransferView = new InfoTransferView(fTorrent);
+
+	BView* view = BGroupLayoutBuilder(B_VERTICAL, spacing / 2)
+		.Add(fTransferView)
+		.SetInsets(spacing, spacing, spacing, spacing)
+		.TopView()
+	;
+	view->SetName("Transfer");
 	return view;
 }
 

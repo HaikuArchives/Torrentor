@@ -38,6 +38,8 @@ Application Torrentor :
 	# Torrent Inspector
 	#
 	InfoWindow.cpp
+	InfoHeaderView.cpp
+	InfoTransferView.cpp
 	PiecesView.cpp
 	InfoPeerView.cpp
 	InfoFileView.cpp

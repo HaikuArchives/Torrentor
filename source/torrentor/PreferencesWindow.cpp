@@ -56,8 +56,6 @@ PreferencesWindow::PreferencesWindow()
 	//
 	//
 	CenterOnScreen();
-	
-	
 	Run();
 }
 

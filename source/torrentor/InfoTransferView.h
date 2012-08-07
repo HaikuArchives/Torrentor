@@ -19,19 +19,40 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		FormatText.h
+//	File Name:		InfoTransferView.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#ifndef TORRENTOR_FORMAT_TEXT_H
-#define TORRENTOR_FORMAT_TEXT_H
+#ifndef TORRENTOR_INFO_TRANSFER_VIEW_H
+#define TORRENTOR_INFO_TRANSFER_VIEW_H
 
+class BStringView;
+class BTextView;
+class PiecesView;
 class TorrentObject;
 
-void FormatRatioText(BString& Buffer, float Ratio);
-void FormatStatusText(BString& Buffer, TorrentObject* torrent);
-void FormatProgressText(BString& Buffer, TorrentObject* torrent);
-void FormatStateString(BString& Buffer, const TorrentObject* torrent);
-void FormatTimeText(BString& Buffer, int seconds);
+class InfoTransferView : public BGroupView
+{
+public:
+	InfoTransferView(const TorrentObject* torrent);
+	
+	void Pulse();
+private:
+	const TorrentObject*	fTorrent;
+	PiecesView*				fPiecesView;
+	BStringView* 			fStateView;
+	BStringView* 			fProgressView;
+	BStringView* 			fHaveView;
+	BStringView* 			fDownloadedView;
+	BStringView* 			fUploadedView;
+	BStringView* 			fFailedView;
+	BStringView* 			fRatioView;
+	BTextView*				fErrorText;
+	BStringView* 			fAddedView;
+	BStringView* 			fCompletedView;
+	BStringView* 			fLastActivityView;
+	BStringView* 			fDownloadTimeView;
+	BStringView* 			fSeedTimeView;
+};
 
-#endif // TORRENTOR_FORMAT_TEXT_H
+#endif // TORRENTOR_INFO_TRANSFER_VIEW_H

@@ -1,5 +1,4 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2010, Stephan Aßmus <superstippi@gmx.de>.
 //	Copyright (c) 2012, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a

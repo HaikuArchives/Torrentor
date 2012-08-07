@@ -41,6 +41,7 @@ class MainWindow : public BWindow
 {
 public:
 					MainWindow(BRect frame); 
+					~MainWindow();
 	virtual	bool	QuitRequested();
 	
 	void MessageReceived(BMessage* message);
@@ -62,6 +63,7 @@ protected:
 	void OpenPreferencesWindow();
 	void OpenTorrentDownloadFolder();
 	void OnTorrentInspect();
+	void OnMenuTorrentRemove();
 private:
 	//BListView*		mlistView;
 	//BFilePanel*		mFilePanel;	

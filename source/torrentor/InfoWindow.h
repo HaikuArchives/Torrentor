@@ -27,15 +27,17 @@
 #define TORRENTOR_INSPECTOR_WINDOW_H
 
 class TorrentObject;
+class BTabView;
+class InfoTransferView;
 
 class InfoWindow : public BWindow
 {
 public:
 	InfoWindow(const TorrentObject* torrent);
-	
-	
+
 protected:
 	BView* _CreateInfoPage(float spacing);
+	BView* _CreateTransferPage(float spacing);
 	BView* _CreateActivityPage(float spacing);
 	BView* _CreateTrackerPage(float spacing);
 	BView* _CreateFilesPage(float spacing);
@@ -44,6 +46,8 @@ protected:
 	
 private:
 	const TorrentObject*	fTorrent;
+	BTabView*				fTabView;
+	InfoTransferView* 		fTransferView;
 };
 
 #endif // TORRENTOR_INSPECTOR_WINDOW_H

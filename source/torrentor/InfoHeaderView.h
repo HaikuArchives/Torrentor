@@ -19,19 +19,27 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		FormatText.h
+//	File Name:		InfoHeaderView.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#ifndef TORRENTOR_FORMAT_TEXT_H
-#define TORRENTOR_FORMAT_TEXT_H
+#ifndef TORRENTOR_INFO_HEADER_VIEW_H
+#define TORRENTOR_INFO_HEADER_VIEW_H
 
+class BStringView;
+class IconView;
 class TorrentObject;
 
-void FormatRatioText(BString& Buffer, float Ratio);
-void FormatStatusText(BString& Buffer, TorrentObject* torrent);
-void FormatProgressText(BString& Buffer, TorrentObject* torrent);
-void FormatStateString(BString& Buffer, const TorrentObject* torrent);
-void FormatTimeText(BString& Buffer, int seconds);
+class InfoHeaderView : public BGroupView
+{
+public:
+	InfoHeaderView(const TorrentObject* fTorrent);
 
-#endif // TORRENTOR_FORMAT_TEXT_H
+private:
+	IconView*		fIconView;
+	BStringView*	fNameView;
+	BStringView*	fInfoView;
+};
+
+
+#endif // TORRENTOR_INFO_HEADER_VIEW_H

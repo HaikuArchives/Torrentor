@@ -31,10 +31,20 @@ class PiecesView : public BView
 public:
 	PiecesView(const TorrentObject* torrent);
 	
+	int GetPieceIndex(int x, int y);
 	
 	virtual void Draw(BRect updateRect);
+	virtual BSize MinSize();
+	virtual BSize PreferredSize();
+	virtual BSize MaxSize();
 private:
 	const TorrentObject*	fTorrent;
+	float	fFirstRun;
+	int8*	fPiecesMap;
+	int 	fNumPieces;
+	int		fAcross;
+	float	fWidth;
+	float	fExtraBorder;
 };
 
 #endif // TORRENTOR_PIECES_VIEW_H

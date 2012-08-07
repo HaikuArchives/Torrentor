@@ -7,12 +7,12 @@ Requirements
 -------
 To build Torrentor you need some libs which are optional packages.
 
-* OpenSSL -- $ installoptionalpackage openssl
-* libevent -- $ installoptionalpackage libevent
-* curl -- $ installoptionalpackage curl
+* OpenSSL 	-- ```bash $ installoptionalpackage openssl```
+* libevent 	-- ```bash $ installoptionalpackage libevent```
+* curl 		-- ```bash $ installoptionalpackage curl```
 
 
 Build
 -------
-Be sure you're using gcc4, you can set this by running $ setgcc gcc4.
-To build torrentor, browse to the root source directory and run $ jam.
+Be sure you're using gcc4, you can set this by running ```$ setgcc gcc4```
+To build torrentor, browse to the root source directory and run ```$ jam```

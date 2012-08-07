@@ -42,7 +42,7 @@ bool TorrentRefFilter::Filter(const entry_ref* ref, BNode* node,
 	BMimeType::GuessMimeType(ref, &FileType);
 	
 	//
-	//
+	// @TODO: Maybe we can add all .torrent's from a directory?
 	//
 	if( node->IsDirectory() )
 		return false;

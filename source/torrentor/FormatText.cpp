@@ -195,3 +195,30 @@ void FormatProgressText(BString& Buffer, TorrentObject* torrent)
 	}
 }
 
+
+void FormatStateString(BString& Buffer, const TorrentObject* torrent)
+{
+	char FormatBuffer[1024] = {0};
+	Buffer = B_EMPTY_STRING;
+	
+	switch( torrent->Statistics()->activity )
+	{
+	case TR_STATUS_STOPPED:
+		Buffer = "Paused";
+		break;
+	case TR_STATUS_CHECK_WAIT:
+		Buffer = "Waiting to check existing data" B_UTF8_ELLIPSIS;
+		break;
+	case TR_STATUS_CHECK:
+		Buffer.SetToFormat("Checking existing data (%s)", 
+			tr_strpercent(FormatBuffer, torrent->Statistics()->recheckProgress * 100.0, sizeof(FormatBuffer)));	
+		break;
+	case TR_STATUS_DOWNLOAD:
+		Buffer = "Downloading";
+		break;
+	case TR_STATUS_SEED:
+		Buffer = "Seeding";
+		break;
+	}
+}
+

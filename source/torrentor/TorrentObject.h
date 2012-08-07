@@ -27,7 +27,7 @@
 #define TORRENTOR_TORRENT_OBJECT_H
 
 
-
+class BString;
 
 class TorrentObject
 {
@@ -40,11 +40,16 @@ public:
 	//
 	//
 	//
-	bool IsActive() const { return fStatistics->activity != TR_STATUS_STOPPED; }
+	bool IsActive() const { return Statistics()->activity != TR_STATUS_STOPPED; }
 	bool IsComplete() const { return Progress() >= 1.0; }
 	
 	
 	float Progress() const { return Statistics()->percentComplete; }
+	
+	bool IsAnyErrorOrWarning() const;
+	
+	int SecondsDownloading() const;
+	int SecondsSeeding() const;
 	
 	//
 	//
@@ -72,8 +77,9 @@ public:
 	void StartTransfer();
 	
 	
-	const char* Name() const;
-	const char* GetDownloadDir() const;
+	BString Name() const;
+	BString DownloadFolder() const;
+	BString ErrorMessage() const;
 	
 	//
 	//

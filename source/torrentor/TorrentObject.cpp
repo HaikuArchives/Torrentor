@@ -23,6 +23,7 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <String.h>
 #include "Torrentor.h"
 #include "TorrentObject.h"
 
@@ -64,7 +65,6 @@ TorrentObject::~TorrentObject()
 
 void TorrentObject::Update()
 {
-	//tr_torrentStatCached ?
 	fStatistics = tr_torrentStat(fTorrentHandle);
 }
 
@@ -77,10 +77,6 @@ void TorrentObject::StopTransfer()
 	//
 	//
 	tr_torrentStop(fTorrentHandle);
-	
-	//
-	//
-	//
 	Update();
 }
 	
@@ -89,20 +85,10 @@ void TorrentObject::StopTransfer()
 //
 void TorrentObject::StartTransfer()
 {
-	//
-	//
-	//
 	if( IsActive() )
 		return;
-		
-	//
-	//
-	//
-	tr_torrentStart(fTorrentHandle);
 	
-	//
-	//
-	//
+	tr_torrentStart(fTorrentHandle);
 	Update();
 }
 
@@ -111,7 +97,7 @@ void TorrentObject::StartTransfer()
 //
 //
 //
-const char* TorrentObject::Name() const
+BString TorrentObject::Name() const
 {
 	if( fInfo->name == NULL )
 		return fInfo->hashString;
@@ -119,14 +105,34 @@ const char* TorrentObject::Name() const
 	return fInfo->name;
 }
 
-const char* TorrentObject::GetDownloadDir() const
+BString TorrentObject::DownloadFolder() const
 {
 	return tr_torrentGetDownloadDir(fTorrentHandle);
 }
 
+bool TorrentObject::IsAnyErrorOrWarning() const
+{
+	return Statistics()->error != TR_STAT_OK;
+}
 
 
+BString TorrentObject::ErrorMessage() const
+{
+	if( !IsAnyErrorOrWarning() )
+		return B_EMPTY_STRING;
+		
+	//
+	//
+	//
+	return Statistics()->errorString;	
+}
 
-//
-//
-//
+int TorrentObject::SecondsDownloading() const
+{
+    return Statistics()->secondsDownloading;
+}
+
+int TorrentObject::SecondsSeeding() const
+{
+    return Statistics()->secondsSeeding;
+}

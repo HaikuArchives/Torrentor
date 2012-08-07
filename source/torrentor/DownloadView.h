@@ -35,6 +35,7 @@ class DownloadView : public BGroupView
 {
 public:
 	DownloadView();
+	~DownloadView();
 
 	virtual BSize MinSize();
 	
@@ -42,6 +43,7 @@ public:
 	virtual void MouseDown(BPoint point);
 	
 	void AddItem(TorrentObject* torrentObject);
+	void RemoveItem(const DownloadItem* Item);
 	
 	int32 IndexOf(BPoint point) const;
 	

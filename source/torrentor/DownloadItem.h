@@ -43,6 +43,7 @@ class DownloadItem : public BGroupView
 {
 public:	
 	DownloadItem(DownloadView* parentView, TorrentObject* torrentObject);
+	~DownloadItem();
 	
 	void AttachedToWindow();
 	

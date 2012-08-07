@@ -33,6 +33,7 @@
 #include "DownloadItem.h"
 #include "DownloadView.h"
 
+#include <cstdio>
 
 DownloadView::DownloadView()
 	:	BGroupView(B_VERTICAL, 0.0),
@@ -43,7 +44,10 @@ DownloadView::DownloadView()
 	AddChild(BSpaceLayoutItem::CreateGlue());
 }
 
-
+DownloadView::~DownloadView()
+{
+	
+}
 
 
 void DownloadView::Pulse()
@@ -99,6 +103,27 @@ const DownloadItem*	DownloadView::ItemAt(int32 ItemIndex)
 const DownloadItem*	DownloadView::ItemSelected() const
 {
 	return fSelectedItem;	
+}
+
+void DownloadView::RemoveItem(const DownloadItem* Item)
+{
+	//
+	//
+	//
+	if( fSelectedItem == Item )
+		fSelectedItem = NULL;
+		
+	
+	//
+	//
+	//
+	GroupLayout()->RemoveView( const_cast<DownloadItem*>(Item) );
+	
+	//
+	//
+	//
+	delete Item;
+	
 }
 
 BSize DownloadView::MinSize()

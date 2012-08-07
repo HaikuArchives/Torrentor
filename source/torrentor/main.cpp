@@ -27,7 +27,6 @@
 #include "MainWindow.h"
 #include "Application.h"
 
-
 //
 //
 //

@@ -1,3 +1,28 @@
+//------------------------------------------------------------------------------
+//	Copyright (c) 2012, Guido Pola.
+//
+//	Permission is hereby granted, free of charge, to any person obtaining a
+//	copy of this software and associated documentation files (the "Software"),
+//	to deal in the Software without restriction, including without limitation
+//	the rights to use, copy, modify, merge, publish, distribute, sublicense,
+//	and/or sell copies of the Software, and to permit persons to whom the
+//	Software is furnished to do so, subject to the following conditions:
+//
+//	The above copyright notice and this permission notice shall be included in
+//	all copies or substantial portions of the Software.
+//
+//	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+//	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+//	DEALINGS IN THE SOFTWARE.
+//
+//	File Name:		PiecesView.h
+//	Authors:		Guido Pola <prodito@live.com>
+//	Description:	
+//------------------------------------------------------------------------------
 #include <View.h>
 #include <ControlLook.h>
 
@@ -8,18 +33,45 @@
 #include "PiecesView.h"
 
 
+static const int32	kMaxPieces			= 16;
+static const float	kBorder				= 1.0f;
 
-static const rgb_color _BorderColor 	= {230, 230, 230, 255};
-static const rgb_color _BackgroundColor = {255, 255, 255, 255};
-static const rgb_color _BlockColor 		= {50, 150, 255, 255};
+static const rgb_color kBorderColor 		= {165, 165, 165, 255};
+static const rgb_color kBackgroundColor 	= {255, 255, 255, 255};
+static const rgb_color kBlockEmptyColor		= {255, 255, 255, 255};
+static const rgb_color kBlockFlashingColor	= {204,  142, 64, 255};
+static const rgb_color kBlockCompleteColor	= {8, 123, 214, 255};
+static const BSize 	kViewSize				= BSize(128, 128);
+
+
+enum PieceStatus_t
+{
+    PIECE_EMPTY,
+    PIECE_DOWNLOADING,
+    PIECE_HIGH_PEERS,
+    PIECE_FINISHED,
+    PIECE_FLASHING
+};
 
 
 PiecesView::PiecesView(const TorrentObject* torrent)
 	:	BView("PicesView", B_FULL_UPDATE_ON_RESIZE | B_WILL_DRAW),
-		fTorrent(torrent)
+		fTorrent(torrent),
+		fFirstRun(true)
 {
-
+	
+	
+	float width = kViewSize.Width();
+	
+	fNumPieces 	= MIN(fTorrent->Info()->pieceCount, kMaxPieces * kMaxPieces);
+	fAcross 	= ceil(sqrt(fNumPieces));
+	fWidth 		= (width - (fAcross + 1) * kBorder) / fAcross;
+	fExtraBorder= (width - ((fWidth + kBorder) * fAcross + kBorder)) / 2;
+	
+	fPiecesMap = new int8[fNumPieces];
 }
+
+
 
 
 void PiecesView::Draw(BRect updateRect)
@@ -29,16 +81,128 @@ void PiecesView::Draw(BRect updateRect)
 	//
 	//
 	//
-
+	float* piecesPercent = new float[fNumPieces];
+	
+	//
+	//
+	//
+	tr_torrentAmountFinished(fTorrent->Handle(), piecesPercent, fNumPieces);
 
 	
-	SetLowColor(_BackgroundColor);
+	SetLowColor(kBackgroundColor);
 	
 	FillRect(frame, B_SOLID_LOW);
+	
+	
+	//
+	//
+	//
+	for( int i = 0; i < fNumPieces; i++ )
+	{
+		rgb_color BlockColor;
+		
+		int row = i % fAcross;
+		int col = i / fAcross;
+        
+        BRect BlockRect(BPoint(row * (fWidth + kBorder) + kBorder + fExtraBorder,
+						frame.Width() - (col + 1) * (fWidth + kBorder) - fExtraBorder),
+						BSize(fWidth, fWidth));
+						
+		//
+		//
+		//
+       	if( piecesPercent[i] == 1.0 )
+		{
+			if( fPiecesMap[i] != PIECE_FINISHED && !fFirstRun )
+			{
+				BlockColor = kBlockFlashingColor;
+				fPiecesMap[i] = PIECE_FINISHED;
+			}
+			else
+			{
+				BlockColor = kBlockCompleteColor;
+				fPiecesMap[i] = PIECE_FINISHED;
+			}
+        }
+        else if( piecesPercent[i] == 0.0 )
+        {
+			BlockColor = kBlockEmptyColor;
+			fPiecesMap[i] = PIECE_EMPTY;
+        }
+        else
+        {
+			BlockColor = tint_color(kBlockCompleteColor, piecesPercent[i]);
+            fPiecesMap[i] = PIECE_DOWNLOADING;
+        }
+
+		SetLowColor(BlockColor);
+		FillRect(BlockRect, B_SOLID_LOW);
+	}
+
+	//
+	// Draw grid.
+	//
+	BeginLineArray(fAcross * 2);
+	
+	//
+	// Draw vertical lines
+	//
+	for( int i = 0; i < fAcross; i++ )
+	{
+		int x = i * (fWidth + kBorder) + kBorder + fExtraBorder;
+		int y = frame.Width() - (i + 1) * (fWidth + kBorder) - fExtraBorder;
+		
+		//
+		//
+		//
+		if( i > 0 )
+			AddLine(BPoint(x, 0), BPoint(x, frame.Height()), kBorderColor);
+			
+		if( i < fAcross - 1 )
+			AddLine(BPoint(0, y), BPoint(frame.Width(), y), kBorderColor);
+	}
+
+	
+	EndLineArray();
 
 	//
 	//
 	//
-	be_control_look->DrawBorder(this, frame, updateRect, _BorderColor, B_PLAIN_BORDER);
+	SetLowColor(kBorderColor);
+	StrokeRect(frame, B_SOLID_LOW);	
+		
+	if( fFirstRun )
+		fFirstRun = false;
+		
+		
+	delete piecesPercent;
 }
+
+BSize PiecesView::MinSize()
+{
+	return kViewSize;
+}
+
+BSize PiecesView::PreferredSize()
+{
+	return kViewSize;
+}
+
+BSize PiecesView::MaxSize()
+{
+	return kViewSize;
+}
+
+
+int PiecesView::GetPieceIndex(int x, int y)
+{
+	BRect frame(Bounds());
+	
+	int numAcross = frame.Width() / kMaxPieces;
+	int row = y / kMaxPieces;
+	int col = x / kMaxPieces;
+	
+	return (row * numAcross) + col;
+}
+
 
