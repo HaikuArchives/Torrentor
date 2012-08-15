@@ -242,7 +242,7 @@ DownloadItem::DownloadItem(DownloadView* parentView, TorrentObject* torrentObjec
 	//
 	// If the torrent is not a folder, search the mime.
 	//	
-	if( !fTorrentObject->IsFolder() )
+	if( !fTorrentObject->IsFolder() && !fTorrentObject->IsMagnet() )
 		BMimeType::GuessMimeType(fTorrentObject->Info()->files[0].name, &mime);
 
 	//
@@ -358,7 +358,7 @@ void DownloadItem::UpdateInfo()
 	FormatProgressText(fProgressText, fTorrentObject);
 	FormatStatusText(fStatusText, fTorrentObject);
 	
-	float DownloadProgress = static_cast<float>(fTorrentObject->Statistics()->percentComplete) * 100.0f;
+	float DownloadProgress = static_cast<float>(fTorrentObject->Statistics()->percentDone) * 100.0f;
 	
 	
 	LockLooper();

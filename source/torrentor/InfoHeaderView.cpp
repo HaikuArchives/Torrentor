@@ -49,7 +49,7 @@ InfoHeaderView::InfoHeaderView(const TorrentObject* fTorrent)
 	//
 	// If the torrent is not a folder, search the mime.
 	//	
-	if( !fTorrent->IsFolder() )
+	if( !fTorrent->IsFolder() && !fTorrent->IsMagnet() )
 		BMimeType::GuessMimeType(fTorrent->Info()->files[0].name, &mime);
 		
 	//

@@ -32,8 +32,13 @@ class BString;
 class TorrentObject
 {
 public:
-	TorrentObject(tr_torrent* TorrentHandle);
+	TorrentObject();
 	~TorrentObject();
+	
+	bool LoadFromHandle(tr_torrent* TorrentHandle);
+	bool LoadFromPath(const tr_session* Session, const char* TorrentPath);
+	bool LoadFromMagnet(const tr_session* Session, const char* MagnetURL);
+
 	
 	void Update();
 	
@@ -61,6 +66,8 @@ public:
 	//
 	//bool IsChecking() const;
 	
+	bool IsMagnet() const;
+	
 	//
 	// Return true if the torrent file is a folder.
 	//
@@ -75,6 +82,8 @@ public:
 	//
 	//
 	void StartTransfer();
+	
+	void Remove(bool DeleteFiles = false) const;
 	
 	
 	BString Name() const;
@@ -96,9 +105,9 @@ public:
 	//
 	const tr_torrent* Handle() const { return fTorrentHandle; }
 private:
-	tr_torrent* fTorrentHandle;
-	const tr_stat*	fStatistics;
-	const tr_info*	fInfo;
+	tr_torrent* 	fTorrentHandle;
+	const tr_stat*		fStatistics;
+	const tr_info*		fInfo;
 };
 
 

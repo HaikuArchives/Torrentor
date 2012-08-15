@@ -23,6 +23,7 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <cstdio>
 #include <libtransmission/transmission.h>
 
 #include <ControlLook.h>
@@ -190,14 +191,8 @@ InfoTransferView::InfoTransferView(const TorrentObject* torrent)
 	
 void InfoTransferView::Pulse()
 {
-	BString TextBuffer;
-	
-	//
-	// If we're hidden don't update.
-	//
-	//if( IsHidden() )
-	//	return;
-	
+	BString TextBuffer = B_EMPTY_STRING;
+		
 	//
 	// If the current active tab it's the InfoTransferView
 	// update the graph.
@@ -218,7 +213,9 @@ void InfoTransferView::Pulse()
 	
 	if( fErrorText->Text() != TextBuffer )
 		fErrorText->SetText( TextBuffer );
-		
+	
+	
+	
 	FormatTimeText(TextBuffer, fTorrent->SecondsDownloading());
 	fDownloadTimeView->SetText( TextBuffer );
 	

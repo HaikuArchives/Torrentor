@@ -23,8 +23,14 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	Main application class.
 //------------------------------------------------------------------------------
+#include <Notification.h>
+#include <StringList.h>
+
 #include "Torrentor.h"
+#include "TorrentorMessages.h"
 #include "MainWindow.h"
+#include "AddMagnetWindow.h"
+#include "AddTorrentWindow.h"
 #include "Application.h"
 
 
@@ -55,6 +61,38 @@
 #define SPEED_M_STR "MiB/s"
 #define SPEED_G_STR "GiB/s"
 #define SPEED_T_STR "TiB/s"
+
+
+// tr_torrentSetCompletenessCallback
+// tr_torrentSetMetadataCallback
+// tr_torrentSetRatioLimitHitCallback
+// tr_torrentSetIdleLimitHitCallback
+
+void TorrentCompletenessHandler(tr_torrent* torrent, tr_completeness completeness, bool wasRunning, void* data)
+{
+	static const char* _completeness[] = {
+		"TR_LEECH",
+		"TR_SEED",
+		"TR_PARTIAL_SEED",	
+	};
+	
+	printf("TorrentCompletenessHandler: %s, wasRunning -> %s\n",
+		_completeness[completeness], wasRunning ? "true" : "false");
+	//
+	// 
+	//
+	if( completeness == TR_LEECH || !wasRunning )
+		return;
+	
+	BNotification* notification = new BNotification(B_INFORMATION_NOTIFICATION);
+	
+	
+	notification->SetGroup("Torrentor!");
+	notification->SetTitle("Download complete");
+	notification->SetContent( tr_torrentInfo( torrent )->name );
+	notification->Send();
+}
+
 
 
 TorrentorApp::TorrentorApp()
@@ -106,6 +144,26 @@ TorrentorApp::~TorrentorApp()
 	tr_sessionClose(fTorrentSession);
 }
 
+void TorrentorApp::MessageReceived(BMessage* message)
+{
+	switch( message->what ) 
+	{
+	case MSG_OPEN_MAGNET_REQUEST:
+		OpenMagnetLinkWindow();
+		break;
+	case MSG_OPEN_MAGNET_LINK:
+		LoadTorrentFromMagnet(message);
+		break;
+	case MSG_OPEN_TORRENT_RESULT:
+		OpenTorrentResult(message);
+		break;
+	default:
+		BApplication::MessageReceived(message);
+		break;
+	}
+
+}
+
 void TorrentorApp::ReadyToRun()
 {
 	SetPulseRate(500000);
@@ -115,12 +173,21 @@ void TorrentorApp::RefsReceived(BMessage* message)
 {
 	int32 index = 0;
 	entry_ref ref;
+	BStringList TorrentPathList;
 
 	//
 	//
 	//
 	while( message->FindRef("refs", index++, &ref) == B_OK )
-		LoadTorrentFromFile(&ref);
+	{
+		BEntry FileEntry(&ref);
+		BPath  FilePath;
+		
+		FileEntry.GetPath(&FilePath);
+		
+		TorrentPathList.Add(FilePath.Path());
+	}
+	LoadTorrentFromFiles(TorrentPathList);
 
 }
 
@@ -154,9 +221,6 @@ void TorrentorApp::LoadTorrentList()
 	int torrentCount = 0;
 	tr_torrent** torrentList;
 	tr_ctor* ctor = tr_ctorNew(fTorrentSession);
- 	
-	//if( paused )
-	//tr_ctorSetPaused( ctor, TR_FORCE, TRUE );
 	
 
 	torrentList = tr_sessionLoadTorrents(fTorrentSession, ctor, &torrentCount);
@@ -166,10 +230,19 @@ void TorrentorApp::LoadTorrentList()
 	//
 	for( int i = 0; i < torrentCount; i++ )
 	{
+		TorrentObject* torrentObject = new TorrentObject();
+		
 		//
 		//
 		//
-		TorrentObject* torrentObject = new TorrentObject(torrentList[i]);
+		if( !torrentObject->LoadFromHandle(torrentList[i]) )
+		{
+			tr_torrentStop(torrentList[i]);
+			delete torrentObject;
+			continue;
+		}
+		
+		tr_torrentSetCompletenessCallback(torrentList[i], TorrentCompletenessHandler, NULL);
 		
 		//
 		//
@@ -190,72 +263,85 @@ void TorrentorApp::LoadTorrentList()
 //
 //
 //
-void TorrentorApp::LoadTorrentFromFile(const entry_ref* FileRef) 
+void TorrentorApp::LoadTorrentFromFiles(const BStringList& TorrentPathList) 
 {
-	size_t   FileLength;
-	uint8_t* FileContent;
-	BPath  	 FilePath;
-	BEntry 	 FileEntry(FileRef);
+	int32 stringCount = TorrentPathList.CountStrings();
+	
+
+	//
+	for( int32 i = 0; i < stringCount; i++ ) 
+	{	
+		TorrentObject* torrentObject = new TorrentObject();
+		
+		//
+		//
+		//
+		if( !torrentObject->LoadFromPath(Session(), TorrentPathList.StringAt(i)) )
+		{
+			delete torrentObject;
+			continue;
+		}		
+		
+		AddTorrentWindow* addTorrentWindow = new AddTorrentWindow(torrentObject);
+		addTorrentWindow->Show();
+	}
+}
+
+void TorrentorApp::OpenTorrentResult(BMessage* message)
+{
+	bool addTorrent = false;
+	bool startTorrent = false;
+	TorrentObject* torrentObject = NULL;
+	
+	message->FindBool("add", &addTorrent);
+	message->FindBool("start", &startTorrent);
 	
 	//
+	// We always need the torrent object.
 	//
-	//
-	FileEntry.GetPath(&FilePath);
-	
-	//
-	// @TODO: create TorrentObject
-	//
-	//
-	//
-	//
-	tr_ctor* ctor = tr_ctorNew(Session());
-	
+	if( message->FindPointer("torrent", reinterpret_cast<void**>(&torrentObject)) != B_OK )
+		return;
+
+
 	//
 	//
 	//
-	FileContent = tr_loadFile(FilePath.Path(), &FileLength);
-	
-	if( FileContent == NULL )
+	if( addTorrent == false ) 
 	{
-		fprintf( stderr, "ERROR: Unrecognized torrent \"%s\".\n", FilePath.Path() );
-        fprintf( stderr, " * If you're trying to create a torrent, use transmission-create.\n" );
-        fprintf( stderr, " * If you're trying to see a torrent's info, use transmission-show.\n" );
-        //tr_sessionClose( h );
+		torrentObject->Remove(true);
+		delete torrentObject;
+		
 		return;
 	}
+	
+	fTorrentList.AddItem(torrentObject);
+		
+	if( startTorrent )
+		torrentObject->StartTransfer();
+		
+	//
+	// If there's a MainWindow created, add torrent.
+	//
+	if( fMainWindow != NULL )
+		fMainWindow->AddTorrent(torrentObject);
+}
 
-	tr_ctorSetMetainfo( ctor, FileContent, FileLength );
+void TorrentorApp::LoadTorrentFromMagnet(BMessage* message)
+{
+	BString MagnetUrl;
 	
-	tr_free( FileContent );
 	
-	int error = 0;
-	tr_torrent* tor = tr_torrentNew( ctor, &error );
-    tr_ctorFree( ctor );
-    if( !tor )
-    {
-        fprintf( stderr, "Failed opening torrent file `%s'\n", FilePath.Path() );
-        //tr_sessionClose( h );
-        return;
-    }
+	if( message->FindString("URL", &MagnetUrl) != B_OK )
+		return;
 
-	//
-	tr_ctorSetMetainfoFromFile(ctor, FilePath.Path());
-	//tr_core_apply_defaults(ctor);
-	//
 	
-	//
-	//
-	//
-	//tr_ctorSetPaused(ctor, TR_FORCE, true);
-	
-	
-	//tr_info inf;
-    //int err = tr_torrentParse( ctor, &inf );
-    
-	//
-	//
-	//
-	TorrentObject* torrentObject = new TorrentObject(tor);
+	TorrentObject* torrentObject = new TorrentObject();
+		
+	if( !torrentObject->LoadFromMagnet(Session(), MagnetUrl) )
+	{
+		delete torrentObject;
+		return;
+	}
 		
 	//
 	//
@@ -266,5 +352,15 @@ void TorrentorApp::LoadTorrentFromFile(const entry_ref* FileRef)
 	// If there's a MainWindow created, add torrent.
 	//
 	if( fMainWindow != NULL )
-		fMainWindow->AddTorrent(torrentObject);
+		fMainWindow->AddTorrent(torrentObject);	
+}
+
+//
+//
+//
+void TorrentorApp::OpenMagnetLinkWindow()
+{
+	OpenMagnetWindow* MagnetWindow = new OpenMagnetWindow();
+	
+	MagnetWindow->Show();
 }

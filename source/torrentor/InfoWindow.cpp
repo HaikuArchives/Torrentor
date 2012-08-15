@@ -23,42 +23,42 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <Button.h>
+#include <ControlLook.h>
 #include <GridLayoutBuilder.h>
 #include <GroupLayout.h>
 #include <GroupLayoutBuilder.h>
+#include <ListView.h>
+#include <ScrollView.h>
 #include <SpaceLayoutItem.h>
+#include <String.h>
+#include <StringView.h>
 #include <TabView.h>
-#include <ControlLook.h>
 #include <Window.h>
-
 
 #include <libtransmission/transmission.h>
 
-#include "TorrentObject.h"
 
-#include "InfoTransferView.h"
-#include "InfoPeerView.h"
+
 #include "InfoFileView.h"
+#include "InfoHeaderView.h"
+#include "InfoPeerView.h"
+#include "InfoTrackerView.h"
+#include "InfoTransferView.h"
 #include "InfoWindow.h"
 
-#include <String.h>
-#include <StringView.h>
-
-#include <ListView.h>
-#include <ScrollView.h>
-#include <Button.h>
+#include "TorrentObject.h"
 
 #include <stdio.h>
 
 
-#include "InfoHeaderView.h"
 
 static const BRect kDefaultFrame = BRect(120, 80, 800, 600);
 
 
 InfoWindow::InfoWindow(const TorrentObject* torrent)
 	:	BWindow(kDefaultFrame, "Torrent Info", 
-				B_FLOATING_WINDOW_LOOK,
+				B_TITLED_WINDOW_LOOK,
 				B_NORMAL_WINDOW_FEEL, 
 				B_AUTO_UPDATE_SIZE_LIMITS |
 				B_ASYNCHRONOUS_CONTROLS |
@@ -159,34 +159,19 @@ public:
 
 };
 
-//BView* _CreateActivityPage(float spacing);
+
 BView* InfoWindow::_CreateTrackerPage(float spacing)
-{
-	int trackerCount = 0;
-	tr_tracker_stat* trackerStat = tr_torrentTrackers( fTorrent->Handle(), &trackerCount );
-	
-	//BListView* trackerListView = new BListView("TrackerList", B_SINGLE_SELECTION_LIST);
-	BListView* trackerListView = new FixedListView("TrackerList");
-	
-	for( int i = 0; i < trackerCount; i++ )
-	{
-		trackerListView->AddItem(new BStringItem(trackerStat[i].announce));
-	}
+{	
+	InfoTrackerView* fTrackerView = new InfoTrackerView(fTorrent);
 
-	
-	BScrollView* trackerScroll = new BScrollView("scroll-tracker-list", trackerListView,
-        								B_FRAME_EVENTS | B_WILL_DRAW, false, true);
-        								
 
-    //trackerListView->ResizeTo(trackerScroll->Bounds().Width(), trackerScroll->Bounds().Height());
-    
     BButton* fAddButton = new BButton("Add", NULL);
 
 	
 	BView* view = BGroupLayoutBuilder(B_VERTICAL, spacing / 2)
-		.Add(trackerScroll)
+		.Add(fTrackerView)
 		.Add(BGroupLayoutBuilder(B_HORIZONTAL, spacing)
-			//.SetInsets(spacing, spacing, spacing, spacing)
+			.SetInsets(spacing, spacing, spacing, spacing)
 			.Add(fAddButton)
 			.AddGlue()
 			//.Add(fCancelButton)
@@ -197,10 +182,7 @@ BView* InfoWindow::_CreateTrackerPage(float spacing)
 		.TopView()
 	;
 	view->SetName("Trackers");
-	
-	tr_torrentTrackersFree(trackerStat, trackerCount);
-	
-	
+
 	return view;
 
 }

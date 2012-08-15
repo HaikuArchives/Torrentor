@@ -19,20 +19,48 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentorMessages.h
+//	File Name:		FileColumn.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#ifndef INTERFACE_FILE_COLUMN_H
+#define INTERFACE_FILE_COLUMN_H
 
-//		Message					Target			Description
-// MSG_OPEN_MAGNET_REQUEST | TorrentorApp | Request to show OpenMagnetWindow 	|
-// MSG_OPEN_MAGNET_LINK	   | TorrentorApp | Request to open a magnet link 		|
-// MSG_OPEN_TORRENT_RESULT | TorrentorApp | ... 
-//
-enum
+#include "ColumnTypes.h"
+
+class BBitmap;
+
+const float FILE_COLUMN_HEIGHT = 42.0f;
+
+class FileField : public BField
 {
-	__MSG_TORRENTOR_START	= 0x4000,
-	MSG_OPEN_MAGNET_REQUEST,				// 
-	MSG_OPEN_MAGNET_LINK,
-	MSG_OPEN_TORRENT_RESULT,
+public:
+	FileField(const BBitmap* icon, const char* fileName, const char* fileInfo);
+	
+	
+	//
+	//
+	//
+	const BBitmap* 	Icon();
+	const BString  	Name();
+	const BString	Info();
+private:
+	const  BBitmap*	fIcon;
+	BString		fName;
+	BString		fInfo;
+
 };
+
+class FileColumn : public BTitledColumn
+{
+public:
+	FileColumn(const char* title, float width, float minWidth, float maxWidth, alignment align = B_ALIGN_LEFT);
+	
+	void DrawField(BField* field, BRect rect, BView* parent);
+	int CompareFields(BField*, BField*);
+	bool AcceptsField(const BField* field) const;
+
+
+};
+
+#endif // INTERFACE_FILE_COLUMN_H

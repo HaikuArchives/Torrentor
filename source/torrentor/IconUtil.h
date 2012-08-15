@@ -27,11 +27,14 @@
 #define TORRENTOR_ICON_UTIL_H
 
 class BBitmap;
+class BString;
 
 //
 //
 //
-const BBitmap* GetIconBitmap(const char* MimeType);
+const BBitmap* GetIconFromMime(BString MimeType);
+const BBitmap* GetIconFromExtension(BString FileExtension);
+//const BBitmap* GetIconFromFilePath(BString FilePath);
 
 
 #endif // TORRENTOR_ICON_UTIL_H

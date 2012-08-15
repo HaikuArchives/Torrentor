@@ -32,7 +32,7 @@ resource app_flags B_SINGLE_LAUNCH;
 resource app_version {
 	major  = 0,
 	middle = 0,
-	minor  = 1,
+	minor  = 3,
 
 	variety = B_APPV_DEVELOPMENT,
 

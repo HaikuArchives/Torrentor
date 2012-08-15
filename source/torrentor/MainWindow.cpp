@@ -26,6 +26,7 @@
 
 
 #include "Torrentor.h"
+#include "TorrentorMessages.h"
 
 #include <Autolock.h>
 #include <Application.h>
@@ -214,7 +215,7 @@ void MainWindow::CreateMenuBar()
 	//
 	//menu->AddItem(new BMenuItem("New Torrent", NULL));
 	menu->AddItem(new BMenuItem("Open Torrent", new BMessage(MENU_FILE_OPEN_TORRENT)));
-	menu->AddItem(new BMenuItem("Open From URL", NULL));
+	menu->AddItem(new BMenuItem("Open From URL", new BMessage(MENU_FILE_OPEN_TORRENT_URL)));
 	menu->AddItem(new BSeparatorItem);
 	menu->AddItem(new BMenuItem("Start All Torrents", NULL));
 	menu->AddItem(new BMenuItem("Pause All Torrent", NULL));
@@ -292,6 +293,9 @@ void MainWindow::MessageReceived(BMessage* message)
 	case MENU_FILE_OPEN_TORRENT:
 		fOpenPanel->Show();
 		break;
+	case MENU_FILE_OPEN_TORRENT_URL:
+		be_app->PostMessage(MSG_OPEN_MAGNET_REQUEST);
+		break;
 	case MENU_EDIT_PREFERENCES:
 		OpenPreferencesWindow();
 		break;
@@ -322,7 +326,6 @@ void MainWindow::OnTorrentInspect()
 	
 	if( const DownloadItem* item = fDownloadView->ItemSelected() )
 	{
-		
 		//
 		// Get the torrent object.
 		//	
@@ -334,7 +337,6 @@ void MainWindow::OnTorrentInspect()
 		InfoWindow* window = new InfoWindow(torrent);
 	
 		window->Show();
-	
 	}
 }
 
@@ -350,11 +352,11 @@ void MainWindow::OpenPreferencesWindow()
 		fPreferencesWindow->Activate();
 }
 
-const char* kTrackerSignature = "application/x-vnd.Be-TRAK";
 
 void MainWindow::OpenTorrentDownloadFolder()
 {
-/*
+/*const char* kTrackerSignature = "application/x-vnd.Be-TRAK";
+
 	if( const DownloadItem* item = fDownloadView->ItemSelected() )
 	{
 		const TorrentObject* torrent = item->GetTorrentObject();
@@ -378,17 +380,6 @@ void MainWindow::OpenTorrentDownloadFolder()
 */
 }
 
-//
-// @FIXME: TorrentObject::Remove.
-//
-int _RemoveFileHandler(const char* filename)
-{
-	BEntry entry(filename);
-	
-	entry.Remove();
-	
-	return 0;
-}
 
 void MainWindow::OnMenuTorrentRemove()
 {
@@ -421,8 +412,7 @@ void MainWindow::OnMenuTorrentRemove()
 		//
 		//
 		//
-		tr_torrentRemove(const_cast<tr_torrent*>(selectedItem->GetTorrentObject()->Handle()),
-						removeData, _RemoveFileHandler);
+		selectedItem->GetTorrentObject()->Remove(removeData);
 	}
 }
 

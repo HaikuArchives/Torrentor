@@ -77,6 +77,15 @@ PiecesView::PiecesView(const TorrentObject* torrent)
 void PiecesView::Draw(BRect updateRect)
 {
 	BRect frame(Bounds());
+	
+	SetLowColor(kBackgroundColor);
+	FillRect(frame, B_SOLID_LOW);
+	
+	SetLowColor(kBorderColor);
+	StrokeRect(frame, B_SOLID_LOW);	
+	
+	if( fTorrent->IsMagnet() )
+		return;
 
 	//
 	//
@@ -89,9 +98,7 @@ void PiecesView::Draw(BRect updateRect)
 	tr_torrentAmountFinished(fTorrent->Handle(), piecesPercent, fNumPieces);
 
 	
-	SetLowColor(kBackgroundColor);
-	
-	FillRect(frame, B_SOLID_LOW);
+
 	
 	
 	//
@@ -168,8 +175,7 @@ void PiecesView::Draw(BRect updateRect)
 	//
 	//
 	//
-	SetLowColor(kBorderColor);
-	StrokeRect(frame, B_SOLID_LOW);	
+
 		
 	if( fFirstRun )
 		fFirstRun = false;

@@ -33,16 +33,6 @@ class IconView : public BView
 public:
 	IconView(const char* MimeType = NULL);
 
-
-
-	void SetTo(const BEntry& entry);
-
-	void SetIconDimmed(bool iconDimmed);
-
-	bool IsIconDimmed() const;
-
-	status_t SaveSettings(BMessage* archive);
-
 	virtual void AttachedToWindow();
 	virtual void Draw(BRect updateRect);
 	virtual BSize MinSize();
@@ -50,8 +40,7 @@ public:
 	virtual BSize MaxSize();
 
 private:
-	BBitmap	fIconBitmap;
-	bool	fDimmedIcon;
+	BString	fIconMime;
 };
 
 

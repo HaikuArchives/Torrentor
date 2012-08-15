@@ -37,6 +37,7 @@ struct tr_benc;
 
 class TorrentObject;
 class MainWindow;
+class BStringList;
 
 
 class TorrentorApp : public BApplication 
@@ -53,6 +54,7 @@ public:
 	//
 	//
 	//
+	void MessageReceived(BMessage* message);
 	void RefsReceived(BMessage* message);
 	void Pulse();
 	void ReadyToRun();
@@ -60,8 +62,10 @@ public:
 protected:
 	void CreateSession();
 	void LoadTorrentList();
-	void LoadTorrentFromFile(const entry_ref* FileRef);
-	
+	void LoadTorrentFromFiles(const BStringList& TorrentPathList);
+	void LoadTorrentFromMagnet(BMessage* message);
+	void OpenTorrentResult(BMessage* message);
+	void OpenMagnetLinkWindow();
 private:
 	tr_session*	fTorrentSession;
 	

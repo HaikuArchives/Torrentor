@@ -251,6 +251,12 @@ class GraphColumn : public BIntegerColumn
 		virtual void		DrawField			(BField*field,
 												 BRect rect,
 												 BView* parent);
+		
+		virtual void		SetTextColor(rgb_color color) { fTextColor = color; }
+		virtual void		SetBackgroundColor(rgb_color color) { fBackColor = color; }
+private:
+	rgb_color fTextColor;
+	rgb_color fBackColor;
 };
 
 #endif

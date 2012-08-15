@@ -7,9 +7,9 @@ Requirements
 -------
 To build Torrentor you need some libs which are optional packages.
 
-* OpenSSL 	-- ```bash $ installoptionalpackage openssl```
-* libevent 	-- ```bash $ installoptionalpackage libevent```
-* curl 		-- ```bash $ installoptionalpackage curl```
+* OpenSSL   -- ```$ installoptionalpackage openssl```
+* libevent  -- ```$ installoptionalpackage libevent```
+* curl      -- ```$ installoptionalpackage curl```
 
 
 Build

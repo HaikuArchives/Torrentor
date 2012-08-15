@@ -19,20 +19,34 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentorMessages.h
+//	File Name:		InfoTrackerView.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#ifndef TORRENTOR_INFO_TRACKER_VIEW_H
+#define TORRENTOR_INFO_TRACKER_VIEW_H
 
-//		Message					Target			Description
-// MSG_OPEN_MAGNET_REQUEST | TorrentorApp | Request to show OpenMagnetWindow 	|
-// MSG_OPEN_MAGNET_LINK	   | TorrentorApp | Request to open a magnet link 		|
-// MSG_OPEN_TORRENT_RESULT | TorrentorApp | ... 
-//
-enum
+#include <ColumnListView.h>
+#include <String.h>
+
+class TorrentObject;
+
+class InfoTrackerView : public BColumnListView 
 {
-	__MSG_TORRENTOR_START	= 0x4000,
-	MSG_OPEN_MAGNET_REQUEST,				// 
-	MSG_OPEN_MAGNET_LINK,
-	MSG_OPEN_TORRENT_RESULT,
+public:
+	InfoTrackerView(const TorrentObject* torrent);
+	//virtual	~HEventList();
+	//		void				RemoveAll();
+	//		void				SetType(const char* type);
+	//		void				SetPath(const char* path);
+
+//protected:
+//	virtual	void				SelectionChanged();
+//
+private:
+	const  TorrentObject* fTorrent;
+//			char*				fType;	
 };
+
+
+#endif // TORRENTOR_INFO_TRACKER_VIEW_H

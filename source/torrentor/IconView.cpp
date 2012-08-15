@@ -25,61 +25,19 @@
 //	Description:	
 //------------------------------------------------------------------------------
 #include "Torrentor.h"
+#include "IconUtil.h"
 #include "IconView.h"
 
 
 IconView::IconView(const char* MimeType)
 	:	BView("IconView", B_WILL_DRAW),
-		fIconBitmap(BRect(0, 0, 31, 31), 0, B_RGBA32),
-		fDimmedIcon(false)
+		fIconMime(MimeType)
 {
 	SetDrawingMode(B_OP_OVER);
-	memset(fIconBitmap.Bits(), 0, fIconBitmap.BitsLength());
-	
-	//
-	//
-	//
-	if( MimeType == NULL )
-		MimeType = B_FILE_MIME_TYPE;
-		
-	
-	BMimeType mime(MimeType);
-	
-	mime.GetIcon(&fIconBitmap, B_LARGE_ICON);
 }
 
 
 
-
-void IconView::SetTo(const BEntry& entry)
-{
-	BNode node(&entry);
-	BNodeInfo info(&node);
-	info.GetTrackerIcon(&fIconBitmap, B_LARGE_ICON);
-	Invalidate();
-}
-
-void IconView::SetIconDimmed(bool iconDimmed)
-{
-	//
-	//
-	//
-	if( fDimmedIcon == iconDimmed )
-		return;
-	
-	fDimmedIcon = iconDimmed;
-	Invalidate();
-}
-
-bool IconView::IsIconDimmed() const
-{
-	return fDimmedIcon;
-}
-
-status_t IconView::SaveSettings(BMessage* archive)
-{
-	return fIconBitmap.Archive(archive);
-}
 
 void IconView::AttachedToWindow()
 {
@@ -88,17 +46,12 @@ void IconView::AttachedToWindow()
 
 void IconView::Draw(BRect updateRect)
 {
-	if (fDimmedIcon) {
-		SetDrawingMode(B_OP_ALPHA);
-		SetBlendingMode(B_CONSTANT_ALPHA, B_ALPHA_OVERLAY);
-		SetHighColor(0, 0, 0, 100);
-	}
-	DrawBitmapAsync(&fIconBitmap);
+	DrawBitmapAsync(GetIconFromMime(fIconMime));
 }
 
 BSize IconView::MinSize()
 {
-	return BSize(fIconBitmap.Bounds().Width(), fIconBitmap.Bounds().Height());
+	return BSize(B_LARGE_ICON, B_LARGE_ICON);
 }
 
 BSize IconView::PreferredSize()

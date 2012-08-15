@@ -9,4 +9,6 @@ SubDirCcFlags -Wno-c++0x-compat ;
 StaticLibrary InterfaceKitEx.a :
 	ColumnListView.cpp
 	ColumnTypes.cpp
+	FileColumn.cpp
+	CheckBoxColumn.cpp
 ;

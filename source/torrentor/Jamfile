@@ -33,16 +33,20 @@ Application Torrentor :
 	DownloadView.cpp
 	PreferencesWindow.cpp
 	FolderSelect.cpp
+	AddMagnetWindow.cpp
+	AddTorrentWindow.cpp
 	
 	#
 	# Torrent Inspector
 	#
-	InfoWindow.cpp
-	InfoHeaderView.cpp
-	InfoTransferView.cpp
-	PiecesView.cpp
-	InfoPeerView.cpp
 	InfoFileView.cpp
+	InfoHeaderView.cpp
+	InfoPeerView.cpp
+	InfoTrackerView.cpp
+	InfoTransferView.cpp
+	InfoWindow.cpp
+	PiecesView.cpp
+	
 	
 	#
 	TorrentObject.cpp

@@ -32,9 +32,11 @@
 //
 int main(int argc, const char** argv)
 {
-	//
-	//
-	//
+	// Only used when debuggin, so we've 
+	// time to attach Debugger.
+	//snooze(5000000);
+
+
 	TorrentorApp application;
 
 	application.Run();

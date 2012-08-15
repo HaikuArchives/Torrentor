@@ -23,6 +23,7 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <cstdio>
 #include "Torrentor.h"
 #include "TorrentRefFilter.h"
 
@@ -37,22 +38,17 @@ const BMimeType TorrentMimeType("application/x-bittorrent");
 //
 bool TorrentRefFilter::Filter(const entry_ref* ref, BNode* node,
 	struct stat_beos* stat, const char* filetype)
-{
-	BMimeType FileType;
-	BMimeType::GuessMimeType(ref, &FileType);
-	
-	//
-	// @TODO: Maybe we can add all .torrent's from a directory?
-	//
+{	
 	if( node->IsDirectory() )
-		return false;
+		return true;
 	
 	//
 	//
 	//
-	if( FileType == TorrentMimeType )
+	if( TorrentMimeType == filetype )
 		return true;
-		
+	
+	
 	return false;
 }
 

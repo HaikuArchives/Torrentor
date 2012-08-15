@@ -23,37 +23,88 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <Entry.h>
 #include <String.h>
 #include "Torrentor.h"
 #include "TorrentObject.h"
 
 #define UTF8_INFINITE_CHARACTER	"\xE2\x88\x9E"
 
-/*
-void RatioToString(float ratio)
+int _TorrentRemoveFileHandler(const char* filename)
 {
-	if(	ratio == TR_RATIO_NA )
-		return "No Ratio";
-		
-	if( ratio == TR_RATIO_INF )
-		return UTF8_INFINITE_CHARACTER;
-		
-	if( ratio < 10.0f )
-		return format("%.2f", tr_truncd(ratio, 2));
-		
-	if( ratio < 100.0f )
-		return format("%.1f", tr_truncd(ratio, 1));
-		
-		
-	return format("%.0f", tr_truncd(ratio, 0));
-}*/
+	BEntry entry(filename);
+	entry.Remove();
+	return 0;
+}
 
 
-TorrentObject::TorrentObject(tr_torrent* TorrentHandle)
-	:	fTorrentHandle(TorrentHandle)
+TorrentObject::TorrentObject()
+	:	fTorrentHandle(NULL),
+		fStatistics(NULL),
+		fInfo(NULL)
 {
+}
+
+bool TorrentObject::LoadFromHandle(tr_torrent* TorrentHandle)
+{
+	fTorrentHandle = TorrentHandle;
 	fInfo 		= tr_torrentInfo(fTorrentHandle);
 	fStatistics = tr_torrentStat(fTorrentHandle);
+
+	return true;
+}
+
+bool TorrentObject::LoadFromPath(const tr_session* Session, const char* TorrentPath)
+{
+	tr_ctor* ctor = tr_ctorNew(Session);
+	
+	tr_ctorSetPaused(ctor, TR_FORCE, TRUE);
+	
+	if( tr_ctorSetMetainfoFromFile(ctor, TorrentPath) != TR_PARSE_OK )
+		return false;
+		
+	//
+	//
+	fTorrentHandle = tr_torrentNew(ctor, NULL);
+	
+	tr_ctorFree(ctor);
+	
+	
+	if( fTorrentHandle == NULL )
+		return false;
+		
+	
+	fInfo 		= tr_torrentInfo(fTorrentHandle);
+	fStatistics = tr_torrentStat(fTorrentHandle);
+
+
+	return true;
+}
+
+bool TorrentObject::LoadFromMagnet(const tr_session* Session, const char* MagnetURL)
+{
+	tr_ctor* ctor = tr_ctorNew(Session);
+	
+	tr_ctorSetPaused(ctor, TR_FORCE, TRUE);
+	
+	if( tr_ctorSetMetainfoFromMagnetLink(ctor, MagnetURL) != TR_PARSE_OK )
+		return false;
+		
+	//
+	//
+	fTorrentHandle = tr_torrentNew(ctor, NULL);
+	tr_ctorFree(ctor);
+	
+	
+	if( fTorrentHandle == NULL )
+		return false;
+		
+	
+	fInfo 		= tr_torrentInfo(fTorrentHandle);
+	fStatistics = tr_torrentStat(fTorrentHandle);
+
+
+	return true;	
 }
 
 TorrentObject::~TorrentObject()
@@ -66,6 +117,11 @@ TorrentObject::~TorrentObject()
 void TorrentObject::Update()
 {
 	fStatistics = tr_torrentStat(fTorrentHandle);
+}
+
+bool TorrentObject::IsMagnet() const
+{
+	return !tr_torrentHasMetadata( fTorrentHandle );
 }
 
 void TorrentObject::StopTransfer()
@@ -92,6 +148,10 @@ void TorrentObject::StartTransfer()
 	Update();
 }
 
+void TorrentObject::Remove(bool DeleteFiles) const
+{
+	tr_torrentRemove(fTorrentHandle, DeleteFiles, _TorrentRemoveFileHandler);
+}
 
 
 //
@@ -99,10 +159,10 @@ void TorrentObject::StartTransfer()
 //
 BString TorrentObject::Name() const
 {
-	if( fInfo->name == NULL )
+	if( Info()->name == NULL )
 		return fInfo->hashString;
 		
-	return fInfo->name;
+	return Info()->name;
 }
 
 BString TorrentObject::DownloadFolder() const

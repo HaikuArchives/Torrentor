@@ -19,20 +19,25 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentorMessages.h
+//	File Name:		MainWindow.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#ifndef TORRENTOR_OPEN_MAGNET_WINDOW_H
+#define TORRENTOR_OPEN_MAGNET_WINDOW_H
 
-//		Message					Target			Description
-// MSG_OPEN_MAGNET_REQUEST | TorrentorApp | Request to show OpenMagnetWindow 	|
-// MSG_OPEN_MAGNET_LINK	   | TorrentorApp | Request to open a magnet link 		|
-// MSG_OPEN_TORRENT_RESULT | TorrentorApp | ... 
-//
-enum
+class BTextControl;
+
+class OpenMagnetWindow : public BWindow
 {
-	__MSG_TORRENTOR_START	= 0x4000,
-	MSG_OPEN_MAGNET_REQUEST,				// 
-	MSG_OPEN_MAGNET_LINK,
-	MSG_OPEN_TORRENT_RESULT,
+public:
+	OpenMagnetWindow();
+	
+	void MessageReceived(BMessage* message);
+protected:
+	void OnMagnetOpenRequest();
+private:
+	BTextControl* fLinkText;
 };
+
+#endif // TORRENTOR_OPEN_MAGNET_WINDOW_H

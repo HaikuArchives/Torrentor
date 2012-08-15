@@ -525,6 +525,9 @@ GraphColumn::GraphColumn(const char* name, float width, float minWidth,
 		float maxWidth, alignment align)
 	: BIntegerColumn(name, width, minWidth, maxWidth, align)
 {
+	
+	fTextColor = make_color(128, 128, 128);
+	fBackColor = make_color(0, 0, 190);
 }
 
 
@@ -545,12 +548,12 @@ GraphColumn::DrawField(BField* field, BRect rect, BView* parent)
 		graphRect.InsetBy(1, 1);
 		float val = graphRect.Width() * (float) number / 100;
 		graphRect.right = graphRect.left + val;
-		parent->SetHighColor(0, 0, 190);
+		parent->SetHighColor(fBackColor);
 		parent->FillRect(graphRect);
 	}
 
 	parent->SetDrawingMode(B_OP_INVERT);
-	parent->SetHighColor(128, 128, 128);
+	parent->SetHighColor(fTextColor);
 	char numstr[256];
 	sprintf(numstr, "%d%%", number);
 

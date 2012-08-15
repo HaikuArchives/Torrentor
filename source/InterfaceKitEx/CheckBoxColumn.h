@@ -19,20 +19,41 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentorMessages.h
+//	File Name:		CheckBoxColumn.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#ifndef INTERFACE_CHECK_BOX_COLUMN_H
+#define INTERFACE_CHECK_BOX_COLUMN_H
 
-//		Message					Target			Description
-// MSG_OPEN_MAGNET_REQUEST | TorrentorApp | Request to show OpenMagnetWindow 	|
-// MSG_OPEN_MAGNET_LINK	   | TorrentorApp | Request to open a magnet link 		|
-// MSG_OPEN_TORRENT_RESULT | TorrentorApp | ... 
-//
-enum
+#include "ColumnTypes.h"
+
+class BBitmap;
+
+class CheckBoxField : public BField
 {
-	__MSG_TORRENTOR_START	= 0x4000,
-	MSG_OPEN_MAGNET_REQUEST,				// 
-	MSG_OPEN_MAGNET_LINK,
-	MSG_OPEN_TORRENT_RESULT,
+public:
+	CheckBoxField(bool selected = false);
+	
+	void Toggle();
+	bool Selected() const;
+private:
+	bool	fSelected;
 };
+
+class CheckBoxColumn : public BTitledColumn
+{
+public:
+	CheckBoxColumn(const char* title, float width, float minWidth, float maxWidth, alignment align = B_ALIGN_LEFT);
+	
+	void DrawField(BField* field, BRect rect, BView* parent);
+	int CompareFields(BField*, BField*);
+	bool AcceptsField(const BField* field) const;
+
+
+	void MouseDown(BColumnListView* /*parent*/, BRow* /*row*/,
+					BField* /*field*/, BRect /*field_rect*/, BPoint /*point*/,
+					uint32 /*buttons*/);
+};
+
+#endif // INTERFACE_CHECK_BOX_COLUMN_H

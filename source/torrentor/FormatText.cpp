@@ -35,27 +35,33 @@
 #define B_UTF8_ARROW_UP_CHARACTER "\xE2\x86\x91"
 #define B_UTF8_ARROW_DOWN_CHARACTER "\xE2\x86\x93"
 
+#ifndef countof
+#define countof(x) (sizeof(x)/sizeof(x[0]))
+#endif
 
-static const int32 kDayInSeconds 	= (24 * 60 * 60);
-static const int32 kHourInSeconds	= (60 * 60);
-static const int32 kMinuteInSeconds = 60;
+
+//static const uint32 kYearInSeconds	= (12 
+//static const uint32 kMonthInSeconds	= (30.43666 * 24 * 60 * 60);
+static const uint32 kDayInSeconds 	= (24 * 60 * 60);
+static const uint32 kHourInSeconds	= (60 * 60);
+static const uint32 kMinuteInSeconds = 60;
 
 
 //
 //
 //
-void FormatRatioText(BString& Buffer, float Ratio)
+void FormatRatioText(BString& Buffer, double Ratio, bool ClearBuffer)
 {
-	if( static_cast<int>(Ratio) == TR_RATIO_NA )
-		Buffer = "None";
-	else if( static_cast<int>(Ratio) == TR_RATIO_INF )
-		Buffer = "Inf";
-	else if( Ratio < 10.0f )
-        Buffer.SetToFormat("%.2f", Ratio);
-    else if( Ratio < 100.0f )
-        Buffer.SetToFormat("%.1f", Ratio);
-    else
-        Buffer.SetToFormat("%.0f", Ratio);
+	char FormatBuffer[128];
+	
+	//	
+	if( ClearBuffer )
+		Buffer = B_EMPTY_STRING;
+		
+	//
+	// Format the ratio.
+	//
+	Buffer << tr_strratio(FormatBuffer, sizeof(FormatBuffer), Ratio, "Infinite");
 }
 
 
@@ -101,53 +107,51 @@ void FormatStatusText(BString& Buffer, TorrentObject* torrent)
 	}
 }
 
-
-void FormatTimeText(BString& Buffer, int seconds)
+//
+//
+//
+struct FormatTimeData_t
 {
-	BString FormatBuffer;
-	int remaining = seconds;
+	char 	Name[32];
+	uint32 	Division;
+};
+FormatTimeData_t FormatTimeData[] = 
+{
+	{"day", kDayInSeconds},
+	{"hour", kHourInSeconds},
+	{"minute", kMinuteInSeconds},
+	{"second", 1}
+};
+
+void FormatTimeText(BString& Buffer, int seconds, bool ClearBuffer)
+{
+	int Remainder 	= seconds;
+	bool FirstFormat= true;
 	
-	const int Days 	= seconds / kDayInSeconds;
-	const int Hours = (seconds % kDayInSeconds) / kHourInSeconds;
-	const int Minutes = (seconds % kMinuteInSeconds) / 60;
-	const int Seconds = (seconds % kHourInSeconds) % 60;
+	if( ClearBuffer )
+		Buffer = B_EMPTY_STRING;
 	
-	if( Days > 0 )
+	//
+	//
+	//
+	for( int i = 0; i < countof(FormatTimeData); i++ )
 	{
-		if( Hours > 0 )
-		{
-			Buffer.SetToFormat("%d days, %d hours", Days, Hours);
-		}
-		else
-		{
-			Buffer.SetToFormat("%d days", Days);
-		}
-	}
-	else if( Hours > 0 )
-	{
-		if( Minutes > 0 )
-		{
-			Buffer.SetToFormat("%d hours, %d minutes", Hours, Minutes);
-		}
-		else
-		{
-			Buffer.SetToFormat("%d hours", Hours);
-		}
-	}
-	else if( Minutes > 0 )
-	{
-		if( Minutes > 0 )
-		{
-			Buffer.SetToFormat("%d minutes, %d seconds", Minutes, Seconds);
-		}
-		else
-		{
-			Buffer.SetToFormat("%d minutes", Minutes);
-		}
-	}
-	else
-	{
-		Buffer.SetToFormat("%d seconds", Seconds);
+		if( Remainder < 1 )
+			return;
+		
+		int value = Remainder / FormatTimeData[i].Division;
+		Remainder %= FormatTimeData[i].Division;
+		
+		if( value < 1 )
+			continue;
+		
+		// Format the text.
+		Buffer 	<< (FirstFormat ? "" : ", ") 	// if we aren't the first item, put a comma.
+				<< value << " " 
+				<< FormatTimeData[i].Name 	<< ( value > 1 ? "s" : "");
+			
+		//
+		FirstFormat = false;
 	}
 }
 
@@ -159,6 +163,7 @@ void FormatProgressText(BString& Buffer, TorrentObject* torrent)
     const bool     IsDownloading = st->leftUntilDone > 0;
     const uint64_t haveTotal 	 = st->haveUnchecked + st->haveValid;
     
+    Buffer = B_EMPTY_STRING;
     
    
 	if( IsDownloading )
@@ -187,10 +192,11 @@ void FormatProgressText(BString& Buffer, TorrentObject* torrent)
 		else
 		{
 			BString EstimatedTimeBuffer;
-			
 			FormatTimeText(EstimatedTimeBuffer, EstimatedTimeLeft);
 			
-			Buffer << " - " << EstimatedTimeBuffer << " remaining.";
+			Buffer 	<< " - " 
+					<< EstimatedTimeBuffer 
+					<< " remaining.";
 		}
 	}
 }

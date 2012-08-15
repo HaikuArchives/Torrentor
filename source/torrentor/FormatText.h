@@ -28,10 +28,10 @@
 
 class TorrentObject;
 
-void FormatRatioText(BString& Buffer, float Ratio);
+void FormatRatioText(BString& Buffer, double Ratio, bool ClearBuffer = true);
 void FormatStatusText(BString& Buffer, TorrentObject* torrent);
 void FormatProgressText(BString& Buffer, TorrentObject* torrent);
 void FormatStateString(BString& Buffer, const TorrentObject* torrent);
-void FormatTimeText(BString& Buffer, int seconds);
+void FormatTimeText(BString& Buffer, int seconds, bool ClearBuffer = true);
 
 #endif // TORRENTOR_FORMAT_TEXT_H

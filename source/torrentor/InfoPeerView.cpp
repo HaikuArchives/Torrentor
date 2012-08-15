@@ -21,10 +21,21 @@ InfoPeerView::InfoPeerView(const TorrentObject* torrent)
 	:
 	BColumnListView("InfoPeerView", 0, B_PLAIN_BORDER, true),
 	fTorrent(torrent)
-{	
-	AddColumn(new BStringColumn("IP Address", 180, 50, 500,
-		B_TRUNCATE_MIDDLE), COLUMN_PEER_ADDRESS);
-	AddColumn(new GraphColumn("Progress", 180, 50, 500), COLUMN_PEER_PROGRESS);
+{
+	SetColumnFlags(B_ALLOW_COLUMN_RESIZE);
+	
+	GraphColumn* fProgressColumn = NULL;
+	
+	AddColumn(new BStringColumn("IP Address", 180, 50, 500, B_TRUNCATE_MIDDLE), COLUMN_PEER_ADDRESS);
+	AddColumn(fProgressColumn = new GraphColumn("Progress", 180, 50, 500), COLUMN_PEER_PROGRESS);
+
+
+	//
+	//
+	//
+	fProgressColumn->SetTextColor(make_color(0, 0, 0));
+	fProgressColumn->SetBackgroundColor(make_color(77, 164, 255));
+
 	
 	//
 	//
@@ -56,11 +67,5 @@ InfoPeerView::InfoPeerView(const TorrentObject* torrent)
 		
 		AddRow(row, (BRow*)NULL);
 	}
-	
 	tr_torrentPeersFree( PeerStatus, peerCount );
-/*
-
-
-void           tr_torrentPeersFree( tr_peer_stat * peerStats,
-*/
 }
