@@ -70,7 +70,6 @@ private:
 	BFilePanel*			fOpenPanel;
 	BMenuBar* 			fMenuBar;
 	DownloadView*		fDownloadView;
-	BScrollView*		fDownloadScroll;
 	PreferencesWindow*	fPreferencesWindow;
 };
 

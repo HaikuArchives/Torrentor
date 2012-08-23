@@ -39,29 +39,6 @@
 
 #include <stdio.h>
 
-//tr_session* _TransmissionSession = NULL;
-
-#define MEM_K 1024
-#define MEM_B_STR   "B"
-#define MEM_K_STR "KiB"
-#define MEM_M_STR "MiB"
-#define MEM_G_STR "GiB"
-#define MEM_T_STR "TiB"
-
-#define DISK_K 1024
-#define DISK_B_STR   "B"
-#define DISK_K_STR "KiB"
-#define DISK_M_STR "MiB"
-#define DISK_G_STR "GiB"
-#define DISK_T_STR "TiB"
-
-#define SPEED_K 1024
-#define SPEED_B_STR   "B/s"
-#define SPEED_K_STR "KiB/s"
-#define SPEED_M_STR "MiB/s"
-#define SPEED_G_STR "GiB/s"
-#define SPEED_T_STR "TiB/s"
-
 
 // tr_torrentSetCompletenessCallback
 // tr_torrentSetMetadataCallback
@@ -100,12 +77,9 @@ TorrentorApp::TorrentorApp()
 {	
 	const char * configDir;
 	
-	
-	tr_formatter_mem_init( MEM_K, MEM_K_STR, MEM_M_STR, MEM_G_STR, MEM_T_STR );
-    tr_formatter_size_init( DISK_K,DISK_K_STR, DISK_M_STR, DISK_G_STR, DISK_T_STR );
-    tr_formatter_speed_init( SPEED_K, SPEED_K_STR, SPEED_M_STR, SPEED_G_STR, SPEED_T_STR );
-
-	
+	tr_formatter_mem_init(1024, "KiB", "MiB", "GiB", "TiB");
+	tr_formatter_size_init(1024, "KiB", "MiB", "GiB", "TiB");
+    tr_formatter_speed_init(1024, "KiB/s", "MiB/s", "GiB/s", "TiB/s");
  
  	tr_bencInitDict(&fTorrentPreferences, 0 );
  	tr_sessionGetDefaultSettings(&fTorrentPreferences);

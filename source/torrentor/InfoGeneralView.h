@@ -19,34 +19,34 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		PiecesView.h
+//	File Name:		InfoGeneralView.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#ifndef TORRENTOR_PIECES_VIEW_H
-#define TORRENTOR_PIECES_VIEW_H
+#ifndef TORRENTOR_INFO_GENERAL_VIEW_H
+#define TORRENTOR_INFO_GENERAL_VIEW_H
 
-class PiecesView : public BView
+class TorrentObject;
+class BStringView;
+class BTextView;
+
+class InfoGeneralView : public BGroupView
 {
 public:
-	PiecesView(const TorrentObject* torrent);
-	~PiecesView();
-	
-	int GetPieceIndex(int x, int y);
-	
-	virtual void Draw(BRect updateRect);
-	virtual BSize MinSize();
-	virtual BSize PreferredSize();
-	virtual BSize MaxSize();
+	InfoGeneralView(const TorrentObject* torrent);
+	void Pulse();
 private:
-	const TorrentObject*	fTorrent;
-	bool	fFirstRun;
-	int8*	fPiecesMap;
-	float*	fPiecesPercent;
-	int 	fNumPieces;
-	int		fAcross;
-	float	fWidth;
-	float	fExtraBorder;
+	const TorrentObject* fTorrent;
+	bool				 fFirstUpdate;
+	BStringView* 		 fPiecesView;
+	BStringView* 		 fHashView;
+	BStringView*  		 fSecureView;
+	BTextView*	 		 fCommentView;
+	BStringView* 		 fCreatorView;
+	BStringView* 		 fDateView;	
+	BStringView* 		 fDataView;
+	BStringView* 		 fTorrentView;
+
 };
 
-#endif // TORRENTOR_PIECES_VIEW_H
+#endif // TORRENTOR_INFO_GENERAL_VIEW_H

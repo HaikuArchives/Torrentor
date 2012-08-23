@@ -29,6 +29,8 @@
 class TorrentObject;
 
 void FormatRatioText(BString& Buffer, double Ratio, bool ClearBuffer = true);
+void FormatSizeText(BString& Buffer, int64_t Bytes, bool ClearBuffer = true);
+void FormatPercentText(BString& Buffer, float Percent, bool ClearBuffer = true);
 void FormatStatusText(BString& Buffer, TorrentObject* torrent);
 void FormatProgressText(BString& Buffer, TorrentObject* torrent);
 void FormatStateString(BString& Buffer, const TorrentObject* torrent);

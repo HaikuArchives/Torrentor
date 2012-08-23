@@ -29,6 +29,7 @@
 
 class DownloadItem;
 class TorrentObject;
+class BScrollView;
 
 
 class DownloadView : public BGroupView 
@@ -53,12 +54,18 @@ public:
 	void ItemClick(DownloadItem* Item);
 	
 	bool QuitRequested();
+	
+	//
+	// Attach to this if you want a scrollview.
+	//
+	BView* 		ScrollView() const;
 
 protected:
 	virtual void DoLayout();
 	
 private:
-	DownloadItem* fSelectedItem;
+	BScrollView*	fScrollView;
+	DownloadItem* 	fSelectedItem;
 };
 
 

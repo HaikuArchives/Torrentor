@@ -41,6 +41,7 @@
 
 
 #include "InfoFileView.h"
+#include "InfoGeneralView.h"
 #include "InfoHeaderView.h"
 #include "InfoPeerView.h"
 #include "InfoTrackerView.h"
@@ -101,31 +102,15 @@ InfoWindow::InfoWindow(const TorrentObject* torrent)
 
 BView* InfoWindow::_CreateInfoPage(float spacing)
 {
-	char FormatBuffer[1024];
 	
-	
-	BStringView* fPiecesLabel = new BStringView("PiecesLabel", "Pieces count:");
-	
-	sprintf(FormatBuffer, "%d, %s", fTorrent->Info()->pieceCount, "size.");
-	
-	BStringView* fPiecesText = new BStringView("PiecesText", FormatBuffer);
-
-
-/*
-		.Add(BGridLayoutBuilder(spacing / 2, spacing / 2)
-			.Add(fStartPageControl->CreateLabelLayoutItem(), 0, 0)
-			.Add(fStartPageControl->CreateTextViewLayoutItem(), 1, 0)
-*/
+	InfoGeneralView* fGeneralView = new InfoGeneralView(fTorrent);
 
 	BView* view = BGroupLayoutBuilder(B_VERTICAL, spacing / 2)
-		.Add(BGridLayoutBuilder(spacing / 2, spacing / 2)
-			.Add(fPiecesLabel, 0, 0)
-			.Add(fPiecesText, 1, 0)
-		)
+		.Add(fGeneralView)
 		.SetInsets(spacing, spacing, spacing, spacing)
 		.TopView()
 	;
-	view->SetName("Info");
+	view->SetName("General");
 	return view;
 }
 

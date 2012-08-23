@@ -65,11 +65,47 @@ void FormatRatioText(BString& Buffer, double Ratio, bool ClearBuffer)
 }
 
 
+void FormatSizeText(BString& Buffer, int64_t Bytes, bool ClearBuffer)
+{
+	char FormatBuffer[128];
+	
+	//	
+	if( ClearBuffer )
+		Buffer = B_EMPTY_STRING;
+		
+	//
+	// Format the size.
+	//
+	Buffer << tr_formatter_mem_B(FormatBuffer, Bytes, sizeof(FormatBuffer));
+}
+
+
+void FormatPercentText(BString& Buffer, float Percent, bool ClearBuffer)
+{
+	char FormatBuffer[128];
+	
+	//	
+	if( ClearBuffer )
+		Buffer = B_EMPTY_STRING;
+		
+	//
+	// Format the percent.
+	//
+	Buffer << tr_strpercent(FormatBuffer, Percent, sizeof(FormatBuffer)) << "%";
+}
+
+
 void FormatStatusText(BString& Buffer, TorrentObject* torrent)
 {
 	char FormatBuffer[1024];	
 	
 	const tr_stat * st = torrent->Statistics();
+	
+	//
+	// If we're a magnet (so we don't have metadata), dont format.
+	//
+	if( torrent->IsMagnet() )
+		return;
 	
 	
 	switch( st->activity )
@@ -183,6 +219,15 @@ void FormatProgressText(BString& Buffer, TorrentObject* torrent)
     //
     if( st->activity == TR_STATUS_DOWNLOAD )
 	{
+		//
+		// If we're downloading the metadata
+		//
+		if( torrent->IsMagnet() )
+		{
+			Buffer << "Downloading metadata.";
+			return;
+		}
+		
 		const int EstimatedTimeLeft = st->eta;
 		
 		if( EstimatedTimeLeft < 0 )

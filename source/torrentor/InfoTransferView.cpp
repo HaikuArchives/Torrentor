@@ -202,6 +202,20 @@ void InfoTransferView::Pulse()
 	//
 	//
 	//
+	FormatPercentText(TextBuffer, fTorrent->Statistics()->percentComplete  * 100.f);
+	
+	//
+	// If the user don't want to download the entire torrent
+	//
+	if( fTorrent->Statistics()->sizeWhenDone < fTorrent->Info()->totalSize )
+	{
+		// (57.15% selected)
+		TextBuffer << " (";
+		FormatPercentText(TextBuffer, fTorrent->Statistics()->percentDone * 100.f, false);	
+		TextBuffer << " selected)";
+	}
+	fProgressView->SetText( TextBuffer );
+	
 	FormatStateString(TextBuffer, fTorrent);
 	fStateView->SetText( TextBuffer );
 	
@@ -214,13 +228,47 @@ void InfoTransferView::Pulse()
 	if( fErrorText->Text() != TextBuffer )
 		fErrorText->SetText( TextBuffer );
 	
+	//
+	//
+	//
+	uint64_t haveTotal = fTorrent->Statistics()->haveValid + 
+						 fTorrent->Statistics()->haveUnchecked;
+	uint64_t haveValid = fTorrent->Statistics()->haveValid;
 	
+	//
+	//
+	//
+	if( haveTotal == haveValid )
+	{
+		FormatSizeText(TextBuffer, haveValid);
+		TextBuffer << " verified";
+	}
+	else
+	{
+		FormatSizeText(TextBuffer, haveTotal);
+		
+		TextBuffer << " ("; 
+		FormatSizeText(TextBuffer, haveValid, false); 
+		TextBuffer << ") verified";
+	}
+	
+	fHaveView->SetText(TextBuffer);
 	
 	FormatTimeText(TextBuffer, fTorrent->SecondsDownloading());
 	fDownloadTimeView->SetText( TextBuffer );
 	
 	FormatTimeText(TextBuffer, fTorrent->SecondsSeeding());
 	fSeedTimeView->SetText( TextBuffer );
+	
+	FormatSizeText(TextBuffer, fTorrent->Statistics()->downloadedEver );
+	fDownloadedView->SetText( TextBuffer );
+	
+	FormatSizeText(TextBuffer, fTorrent->Statistics()->uploadedEver );
+	fUploadedView->SetText( TextBuffer );
+
+	FormatSizeText(TextBuffer, fTorrent->Statistics()->corruptEver );
+	fFailedView->SetText( TextBuffer );
+
 	
 /*
 	fProgressView 	= new BStringView("", "57.15% (57.15% selected)");

@@ -24,16 +24,47 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#include <app/Looper.h>
-#include <app/Messenger.h>
-#include <interface/GroupLayoutBuilder.h>
-#include <interface/GroupView.h>
-#include <interface/ScrollBar.h>
-#include <interface/SpaceLayoutItem.h>
+#include <GroupLayoutBuilder.h>
+#include <GroupView.h>
+#include <Looper.h>
+#include <Messenger.h>
+#include <ScrollBar.h>
+#include <ScrollView.h>
+#include <SpaceLayoutItem.h>
 #include "DownloadItem.h"
 #include "DownloadView.h"
 
 #include <cstdio>
+
+
+class DownloadScrollView : public BScrollView {
+public:
+	DownloadScrollView(BView* target)
+		:	BScrollView("DownloadScrollView", target, 0, false, true, B_NO_BORDER)
+	{
+	}
+
+protected:
+	virtual void DoLayout()
+	{
+		BScrollView::DoLayout();
+		
+		//
+		// Tweak scroll bar layout to hide part of the frame for better looks.
+		//
+		BScrollBar* scrollBar = ScrollBar(B_VERTICAL);
+		scrollBar->MoveBy(1, 1);
+		scrollBar->ResizeBy(0, -B_V_SCROLL_BAR_WIDTH);
+		Target()->ResizeBy(1, 0);
+		
+		//
+		// Set the scroll steps
+		if (BView* item = Target()->ChildAt(0)) 
+		{
+			scrollBar->SetSteps(item->MinSize().height + 1, item->MinSize().height + 1);
+		}
+	}
+};
 
 DownloadView::DownloadView()
 	:	BGroupView(B_VERTICAL, 0.0),
@@ -42,6 +73,11 @@ DownloadView::DownloadView()
 	SetFlags(Flags() | B_PULSE_NEEDED);
 	SetViewColor(245, 245, 245);
 	AddChild(BSpaceLayoutItem::CreateGlue());
+	
+	//
+	// We attach ourselves to our custom scrollview.
+	//
+	fScrollView = new DownloadScrollView(this);
 }
 
 DownloadView::~DownloadView()
@@ -81,6 +117,11 @@ void DownloadView::MouseDown(BPoint point)
 	
 	fSelectedItem = NULL;
 
+}
+
+BView* DownloadView::ScrollView() const
+{
+	return static_cast<BView*>(fScrollView);
 }
 
 int32 DownloadView::IndexOf(BPoint point) const

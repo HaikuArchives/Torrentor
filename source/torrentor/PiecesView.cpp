@@ -59,19 +59,13 @@ PiecesView::PiecesView(const TorrentObject* torrent)
 		fTorrent(torrent),
 		fFirstRun(true)
 {
-	
-	
-	float width = kViewSize.Width();
-	
-	fNumPieces 	= MIN(fTorrent->Info()->pieceCount, kMaxPieces * kMaxPieces);
-	fAcross 	= ceil(sqrt(fNumPieces));
-	fWidth 		= (width - (fAcross + 1) * kBorder) / fAcross;
-	fExtraBorder= (width - ((fWidth + kBorder) * fAcross + kBorder)) / 2;
-	
-	fPiecesMap = new int8[fNumPieces];
 }
 
-
+PiecesView::~PiecesView()
+{
+	delete[] fPiecesMap;
+	delete[] fPiecesPercent;
+}
 
 
 void PiecesView::Draw(BRect updateRect)
@@ -86,19 +80,25 @@ void PiecesView::Draw(BRect updateRect)
 	
 	if( fTorrent->IsMagnet() )
 		return;
-
+		
 	//
+	// this should not be here.
 	//
-	//
-	float* piecesPercent = new float[fNumPieces];
+	if( fFirstRun )
+	{
+		float width = kViewSize.Width();
+		fNumPieces 	= MIN(fTorrent->Info()->pieceCount, kMaxPieces * kMaxPieces);
+		fAcross 	= ceil(sqrt(fNumPieces));
+		fWidth 		= (width - (fAcross + 1) * kBorder) / fAcross;
+		fExtraBorder= (width - ((fWidth + kBorder) * fAcross + kBorder)) / 2;
 	
+		fPiecesMap = new int8[fNumPieces];
+		fPiecesPercent  = new float[fNumPieces];	
+	}
 	//
 	//
 	//
-	tr_torrentAmountFinished(fTorrent->Handle(), piecesPercent, fNumPieces);
-
-	
-
+	tr_torrentAmountFinished(fTorrent->Handle(), fPiecesPercent, fNumPieces);
 	
 	
 	//
@@ -118,7 +118,7 @@ void PiecesView::Draw(BRect updateRect)
 		//
 		//
 		//
-       	if( piecesPercent[i] == 1.0 )
+       	if( fPiecesPercent[i] == 1.0 )
 		{
 			if( fPiecesMap[i] != PIECE_FINISHED && !fFirstRun )
 			{
@@ -131,14 +131,14 @@ void PiecesView::Draw(BRect updateRect)
 				fPiecesMap[i] = PIECE_FINISHED;
 			}
         }
-        else if( piecesPercent[i] == 0.0 )
+        else if( fPiecesPercent[i] == 0.0 )
         {
 			BlockColor = kBlockEmptyColor;
 			fPiecesMap[i] = PIECE_EMPTY;
         }
         else
         {
-			BlockColor = tint_color(kBlockCompleteColor, piecesPercent[i]);
+			BlockColor = tint_color(kBlockCompleteColor, fPiecesPercent[i]);
             fPiecesMap[i] = PIECE_DOWNLOADING;
         }
 
@@ -168,20 +168,13 @@ void PiecesView::Draw(BRect updateRect)
 		if( i < fAcross - 1 )
 			AddLine(BPoint(0, y), BPoint(frame.Width(), y), kBorderColor);
 	}
-
-	
 	EndLineArray();
 
 	//
 	//
 	//
-
-		
 	if( fFirstRun )
 		fFirstRun = false;
-		
-		
-	delete piecesPercent;
 }
 
 BSize PiecesView::MinSize()

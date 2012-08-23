@@ -39,6 +39,7 @@
 #include <ScrollView.h>
 
 #include <Notification.h>
+#include <Roster.h>
 
 #include <ListView.h>
 #include <ListItem.h>
@@ -84,34 +85,7 @@ enum
 
 
 
-class DownloadContainerScrollView : public BScrollView {
-public:
-	DownloadContainerScrollView(BView* target)
-		:	BScrollView("DownloadScrollView", target, 0, false, true, B_NO_BORDER)
-	{
-	}
 
-protected:
-	virtual void DoLayout()
-	{
-		BScrollView::DoLayout();
-		
-		//
-		// Tweak scroll bar layout to hide part of the frame for better looks.
-		//
-		BScrollBar* scrollBar = ScrollBar(B_VERTICAL);
-		scrollBar->MoveBy(1, 1);
-		scrollBar->ResizeBy(0, -B_V_SCROLL_BAR_WIDTH);
-		Target()->ResizeBy(1, 0);
-		
-		//
-		// Set the scroll steps
-		if (BView* item = Target()->ChildAt(0)) 
-		{
-			scrollBar->SetSteps(item->MinSize().height + 1, item->MinSize().height + 1);
-		}
-	}
-};
 
 
 MainWindow::MainWindow(BRect frame) 
@@ -131,7 +105,6 @@ MainWindow::MainWindow(BRect frame)
 	
 	
 	fDownloadView 	= new DownloadView;
-	fDownloadScroll = new DownloadContainerScrollView(fDownloadView);
 	
 	
 //	BStringView* fStatusText = new BStringView("status", "Laralala");
@@ -142,7 +115,7 @@ MainWindow::MainWindow(BRect frame)
 	
 	AddChild(BGroupLayoutBuilder(B_VERTICAL, 0.0)
 		.Add(fMenuBar)
-		.Add(fDownloadScroll)
+		.Add(fDownloadView->ScrollView())
 /*
 		.Add(new BSeparatorView(B_HORIZONTAL, B_PLAIN_BORDER))
 		.Add(BGroupLayoutBuilder(B_HORIZONTAL, spacing)
@@ -355,6 +328,40 @@ void MainWindow::OpenPreferencesWindow()
 
 void MainWindow::OpenTorrentDownloadFolder()
 {
+	
+	entry_ref ref;
+	
+	
+	if( const DownloadItem* item = fDownloadView->ItemSelected() )
+	{
+		//
+		// Get the torrent object.
+		//	
+		const TorrentObject* torrent = item->GetTorrentObject();
+
+	
+		//
+		// Build the download path.
+		//
+		BString DownloadPath = torrent->DownloadFolder();
+		
+		//
+		//
+		//
+		if( torrent->IsFolder() )
+		{
+			BString FolderName = torrent->Info()->files[ 0 ].name;
+			
+			FolderName.Truncate(FolderName.FindFirst('/'));
+			
+			DownloadPath << "/" << FolderName;
+		}
+	
+		status_t status = get_ref_for_path(DownloadPath.String(), &ref);
+		if (status == B_OK)
+			status = be_roster->Launch(&ref);
+	}
+
 /*const char* kTrackerSignature = "application/x-vnd.Be-TRAK";
 
 	if( const DownloadItem* item = fDownloadView->ItemSelected() )

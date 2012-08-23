@@ -12,7 +12,9 @@
 enum
 {
 	COLUMN_PEER_ADDRESS	= 0,
+	COLUMN_PEER_CLIENT,
 	COLUMN_PEER_PROGRESS,
+	COLUMN_PEER_PORT,
 };
 
 
@@ -27,8 +29,9 @@ InfoPeerView::InfoPeerView(const TorrentObject* torrent)
 	GraphColumn* fProgressColumn = NULL;
 	
 	AddColumn(new BStringColumn("IP Address", 180, 50, 500, B_TRUNCATE_MIDDLE), COLUMN_PEER_ADDRESS);
-	AddColumn(fProgressColumn = new GraphColumn("Progress", 180, 50, 500), COLUMN_PEER_PROGRESS);
-
+	AddColumn(new BStringColumn("Client", 140, 50, 500, B_TRUNCATE_MIDDLE), COLUMN_PEER_CLIENT);
+	AddColumn(fProgressColumn = new GraphColumn("Progress", 80, 80, 140), COLUMN_PEER_PROGRESS);
+	AddColumn(new BIntegerColumn("Port", 60, 60, 60), COLUMN_PEER_PORT);
 
 	//
 	//
@@ -47,25 +50,16 @@ InfoPeerView::InfoPeerView(const TorrentObject* torrent)
 	
 	for( int i = 0; i < peerCount; i++ )
 	{
+		const tr_peer_stat* peer = &PeerStatus[i];
 		BRow* row = new BRow();
 		
-		//
-		//
-		//
-		//BBitmap* FlagIcon = new BBitmap(BRect(0, 0, 15, 15), B_RGBA32);
 		
-		// Get the flag icon.
-		//{
-		//	BCountry Country(... geolocation);
-		//	Country.GetIcon(FlagIcon);
-		//}
+		row->SetField(new BStringField(peer->addr), COLUMN_PEER_ADDRESS);
+		row->SetField(new BStringField(peer->client), COLUMN_PEER_CLIENT);
+		row->SetField(new BIntegerField(peer->progress * 100.0), COLUMN_PEER_PROGRESS);
+		row->SetField(new BIntegerField(peer->port), COLUMN_PEER_PORT);
 		
-		
-		
-		row->SetField(new BStringField(PeerStatus[i].addr), COLUMN_PEER_ADDRESS);
-		row->SetField(new BIntegerField(PeerStatus[i].progress * 100.0), COLUMN_PEER_PROGRESS);
-		
-		AddRow(row, (BRow*)NULL);
+		AddRow(row);
 	}
 	tr_torrentPeersFree( PeerStatus, peerCount );
 }
