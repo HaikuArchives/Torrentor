@@ -66,6 +66,7 @@ protected:
 	void LoadTorrentFromMagnet(BMessage* message);
 	void OpenTorrentResult(BMessage* message);
 	void OpenMagnetLinkWindow();
+	void CheckForUpdates();
 private:
 	tr_session*	fTorrentSession;
 	

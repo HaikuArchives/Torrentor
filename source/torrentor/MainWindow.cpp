@@ -188,7 +188,7 @@ void MainWindow::CreateMenuBar()
 	//
 	//menu->AddItem(new BMenuItem("New Torrent", NULL));
 	menu->AddItem(new BMenuItem("Open Torrent", new BMessage(MENU_FILE_OPEN_TORRENT)));
-	menu->AddItem(new BMenuItem("Open From URL", new BMessage(MENU_FILE_OPEN_TORRENT_URL)));
+	menu->AddItem(new BMenuItem("Opem From Magnet", new BMessage(MENU_FILE_OPEN_TORRENT_URL)));
 	menu->AddItem(new BSeparatorItem);
 	menu->AddItem(new BMenuItem("Start All Torrents", NULL));
 	menu->AddItem(new BMenuItem("Pause All Torrent", NULL));

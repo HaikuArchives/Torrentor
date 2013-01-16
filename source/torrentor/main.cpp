@@ -23,6 +23,8 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <curl/curl.h>
+
 #include "Torrentor.h"
 #include "MainWindow.h"
 #include "Application.h"
@@ -35,6 +37,9 @@ int main(int argc, const char** argv)
 	// Only used when debuggin, so we've 
 	// time to attach Debugger.
 	//snooze(5000000);
+	
+	
+	curl_global_init(CURL_GLOBAL_ALL);
 
 
 	TorrentorApp application;

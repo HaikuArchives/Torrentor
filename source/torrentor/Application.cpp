@@ -23,7 +23,17 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	Main application class.
 //------------------------------------------------------------------------------
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <curl/curl.h>
+
+
+
+#include <AppFileInfo.h>
+#include <File.h>
 #include <Notification.h>
+#include <Roster.h>
 #include <StringList.h>
 
 #include "Torrentor.h"
@@ -32,12 +42,6 @@
 #include "AddMagnetWindow.h"
 #include "AddTorrentWindow.h"
 #include "Application.h"
-
-
-
-
-
-#include <stdio.h>
 
 
 // tr_torrentSetCompletenessCallback
@@ -109,6 +113,11 @@ TorrentorApp::TorrentorApp()
 
 	
 	LoadTorrentList();
+	
+	//
+	//
+	//
+	CheckForUpdates();
 }
 
 TorrentorApp::~TorrentorApp()
@@ -181,6 +190,121 @@ void TorrentorApp::CreateSession()
 	//fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &settings);
 
 }
+
+//
+// @TODO: rewrite cURL code.
+//
+struct CURL_MemoryStruct {
+  char *memory;
+  size_t size;
+};
+
+
+static size_t CURL_WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+  size_t realsize = size * nmemb;
+  struct CURL_MemoryStruct *mem = (struct CURL_MemoryStruct *)userp;
+
+  mem->memory = (char*)realloc(mem->memory, mem->size + realsize + 1);
+  if (mem->memory == NULL) {
+    /* out of memory! */ 
+    printf("not enough memory (realloc returned NULL)\n");
+    //exit(EXIT_FAILURE);
+    return 0;
+  }
+
+  memcpy(&(mem->memory[mem->size]), contents, realsize);
+  mem->size += realsize;
+  mem->memory[mem->size] = 0;
+
+  return realsize;
+}
+void version_info_from_string(version_info* versionInfo, BString version)
+{
+	char* buffer = version.LockBuffer(0);
+	
+	//
+	// Here we use the old friend 'strtok'
+	//
+	char* pch = strtok(buffer,".");
+	versionInfo->major = atoi(pch);
+	pch = strtok(NULL,".");
+	versionInfo->middle = atoi(pch);
+	pch = strtok(NULL,".");
+	versionInfo->minor = atoi(pch);
+
+	version.UnlockBuffer();
+}
+
+void TorrentorApp::CheckForUpdates()
+{
+	//
+	//
+	//
+	CURL* curlHandle = curl_easy_init();
+	
+	if( curlHandle == NULL )
+		return;
+		
+	CURL_MemoryStruct chunk;
+
+	chunk.memory = (char*)malloc(1);
+	chunk.size = 0;
+
+		
+	//
+	//
+	//
+	curl_easy_setopt(curlHandle, CURLOPT_URL, "https://raw.github.com/Prodito/Torrentor/master/VERSION");
+	curl_easy_setopt(curlHandle, CURLOPT_WRITEFUNCTION, CURL_WriteMemoryCallback);
+	curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, (void *)&chunk);
+	curl_easy_perform(curlHandle);
+	curl_easy_cleanup(curlHandle);
+
+	//
+	// Now we need to get the app's current version.
+	//
+	app_info appInfo;
+	BFile appFile;
+	BAppFileInfo appFileInfo;
+	version_info appVersionInfo;
+	version_info webVersionInfo;
+	BString appVersion;
+
+	
+	be_app->GetAppInfo(&appInfo);
+	appFile.SetTo(&appInfo.ref, B_READ_WRITE);
+	appFileInfo.SetTo(&appFile);
+	appFileInfo.GetVersionInfo(&appVersionInfo, B_APP_VERSION_KIND);
+	version_info_from_string(&webVersionInfo, "0.0.4");
+	
+	//
+	//
+	//
+	appVersion << "Version " << webVersionInfo.major << "." << webVersionInfo.middle << "." << webVersionInfo.minor;
+	
+	//
+	//
+	//
+	if( appVersionInfo.major  < webVersionInfo.major  ||
+	    appVersionInfo.middle < webVersionInfo.middle ||
+	    appVersionInfo.minor  < webVersionInfo.minor   )
+	{
+		//
+		//
+		//
+		BNotification* notification = new BNotification(B_INFORMATION_NOTIFICATION);
+		
+		
+		notification->SetGroup("Torrentor!");
+		notification->SetTitle("Update available");
+		notification->SetContent( appVersion );
+		notification->SetOnClickApp("application/x-vnd.Be.URL.http");
+		notification->AddOnClickArg("http://haikuware.com/remository/view-details/internet-network/clients/torrentor");
+		notification->Send();
+	}
+}
+
 
 //
 //
