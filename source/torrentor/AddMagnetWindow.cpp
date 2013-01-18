@@ -57,6 +57,7 @@ OpenMagnetWindow::OpenMagnetWindow()
 	);
 	
 	fLinkText->MakeFocus();
+	fOpenButton->MakeDefault(true);
 	CenterOnScreen();
 	Run();
 }
