@@ -38,7 +38,7 @@ OpenMagnetWindow::OpenMagnetWindow()
 	BButton* fOpenButton 	= new BButton("", "Open", new BMessage(MSG_MAGNET_OPEN));
 	BStringView* fLinkLabel	= new BStringView("", "Link:");
 	fLinkText = new BTextControl("", "", NULL);
-	//fLinkText->SetExplicitMinSize(BSize(200, 20));
+	fLinkText->SetExplicitMinSize(BSize(400, 20));
 	
 	//
 	//
