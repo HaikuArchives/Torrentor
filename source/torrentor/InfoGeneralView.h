@@ -35,6 +35,7 @@ class InfoGeneralView : public BGroupView
 public:
 	InfoGeneralView(const TorrentObject* torrent);
 	void Pulse();
+	void UpdateInfo();
 private:
 	const TorrentObject* fTorrent;
 	bool				 fFirstUpdate;

@@ -104,7 +104,7 @@ BView* InfoWindow::_CreateInfoPage(float spacing)
 {
 	
 	InfoGeneralView* fGeneralView = new InfoGeneralView(fTorrent);
-
+	fGeneralView->UpdateInfo();
 	BView* view = BGroupLayoutBuilder(B_VERTICAL, spacing / 2)
 		.Add(fGeneralView)
 		.SetInsets(spacing, spacing, spacing, spacing)

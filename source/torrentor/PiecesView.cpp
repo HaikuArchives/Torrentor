@@ -57,7 +57,9 @@ enum PieceStatus_t
 PiecesView::PiecesView(const TorrentObject* torrent)
 	:	BView("PicesView", B_FULL_UPDATE_ON_RESIZE | B_WILL_DRAW),
 		fTorrent(torrent),
-		fFirstRun(true)
+		fFirstRun(true),
+		fPiecesMap(NULL),
+		fPiecesPercent(NULL)
 {
 }
 

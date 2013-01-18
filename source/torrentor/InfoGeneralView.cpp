@@ -159,6 +159,11 @@ InfoGeneralView::InfoGeneralView(const TorrentObject* torrent)
 
 void InfoGeneralView::Pulse()
 {
+	UpdateInfo();
+}
+	
+void InfoGeneralView::UpdateInfo()
+{
 	BString formatBuffer;
 	char tempBuffer[1024] = {0};
 
