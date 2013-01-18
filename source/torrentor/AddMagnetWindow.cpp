@@ -20,8 +20,8 @@ enum
 OpenMagnetWindow::OpenMagnetWindow()
 	:	BWindow(BRect(),
 				"Open Magnet Link", 
-				B_MODAL_WINDOW_LOOK,
-				B_MODAL_APP_WINDOW_FEEL, 
+				B_TITLED_WINDOW_LOOK,
+				B_NORMAL_WINDOW_FEEL, 
 				B_AUTO_UPDATE_SIZE_LIMITS |
 				B_ASYNCHRONOUS_CONTROLS |
 				B_NOT_ZOOMABLE |
