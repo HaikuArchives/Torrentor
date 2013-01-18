@@ -1,8 +1,10 @@
 #include <Application.h>
 #include <Button.h>
+#include <Clipboard.h>
 #include <ControlLook.h>
 #include <GroupLayout.h>
 #include <GroupLayoutBuilder.h>
+#include <String.h>
 #include <StringView.h>
 #include <TextControl.h>
 #include <Window.h>
@@ -57,9 +59,32 @@ OpenMagnetWindow::OpenMagnetWindow()
 	);
 	
 	fLinkText->MakeFocus();
+	fLinkText->SetText(GetMagnetFromClipboard());
 	fOpenButton->MakeDefault(true);
 	CenterOnScreen();
 	Run();
+}
+
+BString OpenMagnetWindow::GetMagnetFromClipboard() {
+	const char *text = NULL;
+	ssize_t numBytes;
+	status_t status;
+	BMessage *clip = (BMessage *)NULL;
+	if (be_clipboard->Lock()) {
+		if ((clip = be_clipboard->Data())) {
+			status = clip->FindData("text/plain", B_MIME_TYPE, (const void **)&text, &numBytes);
+		}
+		be_clipboard->Unlock();
+	}
+	
+	if (status == B_OK) {
+		BString link(text);
+		if (link.FindFirst("magnet:") == 0) {
+			return link;
+		}
+	}
+	
+	return BString();
 }
 
 void OpenMagnetWindow::MessageReceived(BMessage* message)
