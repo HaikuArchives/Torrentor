@@ -56,6 +56,7 @@ OpenMagnetWindow::OpenMagnetWindow()
 		.SetInsets(spacing, spacing, spacing, spacing)
 	);
 	
+	fLinkText->MakeFocus();
 	CenterOnScreen();
 	Run();
 }
