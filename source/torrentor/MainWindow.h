@@ -64,6 +64,8 @@ protected:
 	void OpenTorrentDownloadFolder();
 	void OnTorrentInspect();
 	void OnMenuTorrentRemove();
+	void OnMenuStartAllTorrents();
+	void OnMenuStopAllTorrents();
 private:
 	//BListView*		mlistView;
 	//BFilePanel*		mFilePanel;	

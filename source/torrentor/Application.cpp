@@ -38,6 +38,7 @@
 
 #include "Torrentor.h"
 #include "TorrentorMessages.h"
+#include "IconUtil.h"
 #include "MainWindow.h"
 #include "AddMagnetWindow.h"
 #include "AddTorrentWindow.h"
@@ -51,14 +52,27 @@
 
 void TorrentCompletenessHandler(tr_torrent* torrent, tr_completeness completeness, bool wasRunning, void* data)
 {
-	static const char* _completeness[] = {
-		"TR_LEECH",
-		"TR_SEED",
-		"TR_PARTIAL_SEED",	
-	};
+	//
+	//
+	//
+	BMessage* msg = new BMessage(MSG_TORRENT_COMPLETENESS);
 	
-	printf("TorrentCompletenessHandler: %s, wasRunning -> %s\n",
-		_completeness[completeness], wasRunning ? "true" : "false");
+	msg->AddPointer("torrentHandle", torrent);
+	msg->AddInt32("torrentCompleteness", static_cast<int32>(completeness));
+	msg->AddBool("torrentRunning", wasRunning);
+	
+	be_app->PostMessage(msg);
+	
+	/*
+	
+	//static const char* _completeness[] = {
+	//	"TR_LEECH",
+	//	"TR_SEED",
+	//	"TR_PARTIAL_SEED",	
+	//};
+	//
+	//printf("TorrentCompletenessHandler: %s, wasRunning -> %s\n",
+	//	_completeness[completeness], wasRunning ? "true" : "false");
 	//
 	// 
 	//
@@ -71,7 +85,7 @@ void TorrentCompletenessHandler(tr_torrent* torrent, tr_completeness completenes
 	notification->SetGroup("Torrentor!");
 	notification->SetTitle("Download complete");
 	notification->SetContent( tr_torrentInfo( torrent )->name );
-	notification->Send();
+	notification->Send();*/
 }
 
 
@@ -93,9 +107,8 @@ TorrentorApp::TorrentorApp()
  	
  
 
-	fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &fTorrentPreferences);
-	
-	char * str = tr_bencToStr( &fTorrentPreferences, TR_FMT_JSON, NULL );
+	fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &fTorrentPreferences);	
+	char * str 		= tr_bencToStr( &fTorrentPreferences, TR_FMT_JSON, NULL );
 
 	
 	//printf("configDir -> %s\n", configDir);
@@ -139,6 +152,12 @@ void TorrentorApp::MessageReceived(BMessage* message)
 		break;
 	case MSG_OPEN_TORRENT_RESULT:
 		OpenTorrentResult(message);
+		break;
+	case MSG_TORRENT_COMPLETENESS:
+		OnTorrentComplete(message);
+		break;
+	case MSG_TORRENT_PAUSE_START_ALL:
+		OnTorrentPauseStartAll(message);
 		break;
 	default:
 		BApplication::MessageReceived(message);
@@ -361,7 +380,7 @@ void TorrentorApp::LoadTorrentList()
 		// If there's a MainWindow created, add torrent.
 		//
 		if( fMainWindow != NULL )
-			fMainWindow->AddTorrent(torrentObject);
+			fMainWindow->AddTorrent(torrentObject);			
 	}
 	
 	tr_free( torrentList );
@@ -473,4 +492,103 @@ void TorrentorApp::OpenMagnetLinkWindow()
 	OpenMagnetWindow* MagnetWindow = new OpenMagnetWindow();
 	
 	MagnetWindow->Show();
+}
+
+void TorrentorApp::OnTorrentComplete(BMessage* message)
+{
+	tr_torrent* torrent	= NULL;
+	/*tr_completeness completeness =*/
+	int32 completeness = 0;
+	bool wasRunning = false;
+	
+	//
+	//
+	//
+	if( message->FindPointer("torrentHandle", reinterpret_cast<void**>(&torrent)) != B_OK )
+		return;
+	
+	if( message->FindInt32("torrentCompleteness", &completeness) != B_OK )
+		return;
+	
+	if( message->FindBool("torrentRunning", &wasRunning) != B_OK )
+		return;
+	//
+	//
+	//
+	if( completeness == TR_LEECH || !wasRunning )
+		return;
+		
+	//
+	//
+	//
+	TorrentObject* torrentObject = fTorrentList.EachElement(TorrentorApp::_findTorrentObject, reinterpret_cast<void*>(torrent));
+	
+	if( torrentObject == NULL )
+		return;
+
+	
+	//
+	//
+	//
+	BString mimePath;
+	mimePath << torrentObject->DownloadFolder() 
+			 << '/' 
+			 << (torrentObject->IsFolder() ? torrentObject->Name() : torrentObject->Info()->files[0].name);
+		
+	//
+	// Update the mime info.
+	//
+	update_mime_info(mimePath.String(), torrentObject->IsFolder(), false, B_UPDATE_MIME_INFO_FORCE_KEEP_TYPE);
+	
+		
+	//
+	// Notify the user about the recently completed file/torrent.
+	//
+	BNotification* notification = new BNotification(B_INFORMATION_NOTIFICATION);
+	
+	
+	BMimeType mime;
+	torrentObject->MimeType(mime);
+	notification->SetIcon(GetIconFromMime(mime.Type()));
+	
+	
+	notification->SetGroup("Torrentor!");
+	notification->SetTitle("Download complete");
+	notification->SetContent( torrentObject->Name() );
+	notification->Send();
+}
+
+void TorrentorApp::OnTorrentPauseStartAll(BMessage* message)
+{
+	bool pauseAll = false;
+	
+	if( message->FindBool("pause", &pauseAll) != B_OK )
+		return;
+		
+	//
+	//
+	//
+	fTorrentList.EachElement(TorrentorApp::_torrentPauseStartEach, reinterpret_cast<void*>(&pauseAll));
+}
+
+TorrentObject* TorrentorApp::_torrentPauseStartEach(TorrentObject* torrentObject, void* pauseParam)
+{	
+	bool pause = *reinterpret_cast<bool*>(pauseParam);
+	
+	if( pause )
+		torrentObject->StopTransfer();
+	else
+		torrentObject->StartTransfer();
+		
+	return NULL;
+}
+
+TorrentObject* TorrentorApp::_findTorrentObject(TorrentObject* torrentObject, void* torrentParam)
+{
+	tr_torrent* torrent = static_cast<tr_torrent*>(torrentParam);
+	
+	if( torrentObject->Handle() == torrent )
+		return torrentObject;
+	
+	return NULL;
 }

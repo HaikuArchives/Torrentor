@@ -24,11 +24,14 @@
 //	Description:	
 //------------------------------------------------------------------------------
 #include <Entry.h>
+#include <MimeType.h>
 #include <String.h>
 #include "Torrentor.h"
 #include "TorrentObject.h"
 
 #define UTF8_INFINITE_CHARACTER	"\xE2\x88\x9E"
+
+static const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
 
 int _TorrentRemoveFileHandler(const char* filename)
 {
@@ -185,6 +188,14 @@ BString TorrentObject::ErrorMessage() const
 	//
 	//
 	return Statistics()->errorString;	
+}
+
+void TorrentObject::MimeType(BMimeType& mime)
+{
+	mime.SetTo(B_DIRECTORY_MIME_TYPE);
+	
+	if( !IsFolder() && !IsMagnet() )
+		BMimeType::GuessMimeType(Info()->files[0].name, &mime);
 }
 
 int TorrentObject::SecondsDownloading() const

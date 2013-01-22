@@ -26,8 +26,9 @@
 #ifndef TORRENTOR_TORRENT_OBJECT_H
 #define TORRENTOR_TORRENT_OBJECT_H
 
-
+class BMimeType;
 class BString;
+
 
 class TorrentObject
 {
@@ -89,6 +90,11 @@ public:
 	BString Name() const;
 	BString DownloadFolder() const;
 	BString ErrorMessage() const;
+	
+	//
+	//
+	//
+	void MimeType(BMimeType& mime);
 	
 	//
 	//

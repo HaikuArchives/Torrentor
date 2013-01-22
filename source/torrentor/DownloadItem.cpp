@@ -223,7 +223,7 @@ filter_result MessageItemClickHook(BMessage* msg, BHandler** handler, BMessageFi
 
 
 
-static const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
+
 static const rgb_color _ActiveBackgroundColor = {230, 230, 230, 255};
 static const rgb_color _NormalBackgroundColor = {245, 245, 245, 255};
 
@@ -237,13 +237,8 @@ DownloadItem::DownloadItem(DownloadView* parentView, TorrentObject* torrentObjec
 	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE | B_WILL_DRAW);
 	
 	
-	BMimeType mime(B_DIRECTORY_MIME_TYPE);
-	
-	//
-	// If the torrent is not a folder, search the mime.
-	//	
-	if( !fTorrentObject->IsFolder() && !fTorrentObject->IsMagnet() )
-		BMimeType::GuessMimeType(fTorrentObject->Info()->files[0].name, &mime);
+	BMimeType mime;
+	fTorrentObject->MimeType(mime);
 
 	//
 	//

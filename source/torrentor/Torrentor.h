@@ -46,6 +46,7 @@
 
 #include <storage/FilePanel.h>
 #include <storage/Mime.h>
+#include <storage/MimeType.h>
 #include <storage/NodeInfo.h>
 #include <storage/Path.h>
 

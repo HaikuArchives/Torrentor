@@ -69,6 +69,18 @@ protected:
 	void OpenTorrentResult(BMessage* message);
 	void OpenMagnetLinkWindow();
 	void CheckForUpdates();
+	
+	void OnTorrentComplete(BMessage* message);
+	void OnTorrentPauseStartAll(BMessage* message);
+	
+	
+	//
+	//
+	//
+	static TorrentObject* _torrentPauseStartEach(TorrentObject* torrentObject, void* pauseParam);
+	static TorrentObject* _findTorrentObject(TorrentObject* torrentObject, void* torrentParam);
+
+
 private:
 	tr_session*	fTorrentSession;
 	
