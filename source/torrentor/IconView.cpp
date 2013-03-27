@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //	Copyright (c) 2010, Stephan Aßmus <superstippi@gmx.de>.
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -20,7 +20,7 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		DocumentView.h
+//	File Name:		IconView.cpp
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------

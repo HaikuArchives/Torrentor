@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -33,9 +33,11 @@ class TorrentObject;
 class InfoHeaderView : public BGroupView
 {
 public:
-	InfoHeaderView(const TorrentObject* fTorrent);
-
+	InfoHeaderView(TorrentObject* torrent);
+	
+	void Update();
 private:
+	TorrentObject* 	fTorrent;
 	IconView*		fIconView;
 	BStringView*	fNameView;
 	BStringView*	fInfoView;

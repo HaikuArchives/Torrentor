@@ -77,8 +77,6 @@ enum
 {
 	MENU_FILE_OPEN_TORRENT		= 0x400000,
 	MENU_FILE_OPEN_TORRENT_URL,
-	MENU_FILE_RESUME_ALL_TORRENT,
-	MENU_FILE_PAUSE_ALL_TORRENT,
 	MENU_EDIT_PREFERENCES,
 	MENU_TORRENT_INSPECT,
 	MENU_TORRENT_OPEN_DOWNLOAD,
@@ -192,8 +190,8 @@ void MainWindow::CreateMenuBar()
 	menu->AddItem(new BMenuItem("Open Torrent", new BMessage(MENU_FILE_OPEN_TORRENT), 'O'));
 	menu->AddItem(new BMenuItem("Open From Magnet", new BMessage(MENU_FILE_OPEN_TORRENT_URL), 'M'));
 	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem("Start All Torrents", new BMessage(MENU_FILE_RESUME_ALL_TORRENT)));
-	menu->AddItem(new BMenuItem("Pause All Torrent", new BMessage(MENU_FILE_PAUSE_ALL_TORRENT)));
+	menu->AddItem(new BMenuItem("Start All Torrents", NULL));
+	menu->AddItem(new BMenuItem("Pause All Torrent", NULL));
 	menu->AddItem(new BSeparatorItem);
 	menu->AddItem(new BMenuItem("Quit", new BMessage(B_QUIT_REQUESTED), 'Q'));
 	
@@ -271,12 +269,6 @@ void MainWindow::MessageReceived(BMessage* message)
 	case MENU_FILE_OPEN_TORRENT_URL:
 		be_app->PostMessage(MSG_OPEN_MAGNET_REQUEST);
 		break;
-	case MENU_FILE_RESUME_ALL_TORRENT:
-		OnMenuStartAllTorrents();
-		break;
-	case MENU_FILE_PAUSE_ALL_TORRENT:
-		OnMenuStopAllTorrents();
-		break;
 	case MENU_EDIT_PREFERENCES:
 		OpenPreferencesWindow();
 		break;
@@ -315,7 +307,7 @@ void MainWindow::OnTorrentInspect()
 		//
 		// @TODO: check if inspect window is already created.
 		//
-		InfoWindow* window = new InfoWindow(torrent);
+		InfoWindow* window = new InfoWindow(const_cast<TorrentObject*>(torrent));
 	
 		window->Show();
 	}
@@ -449,18 +441,4 @@ void MainWindow::AddTorrent(TorrentObject* torrentObject)
 	// @TODO: fDownloadView->AddItem(torrentObject);
 	//
 	fDownloadView->AddItem(torrentObject);
-}
-
-void MainWindow::OnMenuStartAllTorrents()
-{
-	BMessage* message = new BMessage(MSG_TORRENT_PAUSE_START_ALL);
-	message->AddBool("pause", false);
-	be_app->PostMessage(message);
-}
-
-void MainWindow::OnMenuStopAllTorrents()
-{
-	BMessage* message = new BMessage(MSG_TORRENT_PAUSE_START_ALL);
-	message->AddBool("pause", true);
-	be_app->PostMessage(message);
 }

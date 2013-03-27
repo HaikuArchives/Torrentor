@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -32,25 +32,26 @@
 
 #include <libtransmission/transmission.h>
 #include <libtransmission/utils.h>
+#include "TorrentorMessages.h"
 #include "TorrentObject.h"
 #include "IconView.h"
 #include "InfoHeaderView.h"
 
 static const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
 
-InfoHeaderView::InfoHeaderView(const TorrentObject* fTorrent)
-	:	BGroupView(B_HORIZONTAL, 0)
+InfoHeaderView::InfoHeaderView(TorrentObject* torrent)
+	:	BGroupView(B_HORIZONTAL, 0),
+		fTorrent(torrent)
 {
 	SetFlags(Flags() | B_FULL_UPDATE_ON_RESIZE | B_WILL_DRAW);
 	
 	char FormatBuffer[1024] = {0};
-	BMimeType mime(B_DIRECTORY_MIME_TYPE);
+	BMimeType mime;
 	
 	//
-	// If the torrent is not a folder, search the mime.
-	//	
-	if( !fTorrent->IsFolder() && !fTorrent->IsMagnet() )
-		BMimeType::GuessMimeType(fTorrent->Info()->files[0].name, &mime);
+	// Get the torrent mime.
+	//
+	fTorrent->MimeType(mime);
 		
 	//
 	//
@@ -93,3 +94,29 @@ InfoHeaderView::InfoHeaderView(const TorrentObject* fTorrent)
 	fInfoView->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 
 }
+
+void InfoHeaderView::Update()
+{
+	char FormatBuffer[1024] = {0};
+	BMimeType mime;
+	
+	//
+	// Get the torrent mime.
+	//	
+	fTorrent->MimeType(mime);
+	
+	//
+	//
+	//
+	BString infoText;
+	infoText.SetToFormat("%d files, %s", fTorrent->Info()->fileCount,
+		tr_formatter_mem_B(FormatBuffer, fTorrent->Statistics()->sizeWhenDone, sizeof(FormatBuffer)));
+
+	//
+	//
+	//
+	fIconView->SetMime(mime.Type());
+	fNameView->SetText(fTorrent->Name());
+	fInfoView->SetText(infoText);
+}
+

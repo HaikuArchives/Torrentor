@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -31,7 +31,7 @@
 //
 enum
 {
-	__MSG_TORRENTOR_START	= 0x4000,
+	__MSG_TORRENTOR_START	= '_tor',
 	MSG_OPEN_MAGNET_REQUEST,				// 
 	MSG_OPEN_MAGNET_LINK,
 	MSG_OPEN_TORRENT_RESULT,
@@ -41,4 +41,9 @@ enum
 	
 	//
 	MSG_TORRENT_PAUSE_START_ALL,
+	
+	//
+	//
+	//
+	MSG_TRANSMISSION_METADATA_CALLBACK,
 };

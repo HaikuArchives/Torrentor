@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //	Copyright (c) 2010, Stephan Aßmus <superstippi@gmx.de>.
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -25,7 +25,7 @@
 //	Description:	
 //------------------------------------------------------------------------------
 #include "Torrentor.h"
-
+#include "TorrentorMessages.h"
 #include <String.h>
 
 #include "IconView.h"
@@ -254,6 +254,12 @@ DownloadItem::DownloadItem(DownloadView* parentView, TorrentObject* torrentObjec
 	//
 	//
 	//
+	if (fTorrentObject->IsMagnet())
+		fTorrentObject->SetMetadataCallbackHandler(this);
+	
+	//
+	//
+	//
 	//BMessageFilter* fMessageFilter = new BMessageFilter(B_MOUSE_DOWN, MessageItemClickHook);
 
 	fIconView->AddFilter( new BMessageFilter(B_MOUSE_DOWN, MessageItemClickHook) );
@@ -292,11 +298,6 @@ DownloadItem::DownloadItem(DownloadView* parentView, TorrentObject* torrentObjec
 	;
 	verticalGroup->SetViewColor(ViewColor());
 	layout->AddView(verticalGroup);
-	
-	
-	static const rgb_color kDefaultBarColor = {255, 200, 0, 255};
-
-	fProgressBar->SetBarColor(kDefaultBarColor);
 	
 
 	BFont font;
@@ -406,6 +407,9 @@ void DownloadItem::MessageReceived(BMessage* message)
 				fTorrentObject->StartTransfer();
 		}
 		break;
+	case MSG_TRANSMISSION_METADATA_CALLBACK:
+		OnMetadataComplete();
+		break;
 //	case MSG_UPDATE_DOWNLOAD:
 //		OnUpdateDownload(message);
 //		UpdateInfo();
@@ -424,6 +428,18 @@ const TorrentObject* DownloadItem::GetTorrentObject() const
 void DownloadItem::OnUpdateDownload(BMessage* Msg)
 {
 
+}
+
+void DownloadItem::OnMetadataComplete()
+{
+	BMimeType mime;
+	fTorrentObject->MimeType(mime);
+
+	//
+	//
+	//
+	fIconView->SetMime(mime.Type());
+	fNameView->SetText(fTorrentObject->Name());
 }
 
 /*

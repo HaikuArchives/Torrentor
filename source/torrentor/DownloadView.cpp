@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //	Copyright (c) 2010, Stephan Aßmus <superstippi@gmx.de>.
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -170,14 +170,25 @@ void DownloadView::RemoveItem(const DownloadItem* Item)
 BSize DownloadView::MinSize()
 {
 	BSize minSize = BGroupView::MinSize();
-	return BSize(minSize.width, 68);
+	return BSize(minSize.width, (GroupLayout()->CountItems() - 1) * 68);
 }
+/*
+BSize DownloadView::MaxSize()
+{
+	BSize maxSize = BGroupView::MaxSize();
+	return maxSize; //BSize(maxSize.width, MinSize().Height());
+}
+
+BSize DownloadView::PreferredSize()
+{
+	return MinSize();
+}*/
 
 void DownloadView::DoLayout()
 {
 	BGroupView::DoLayout();
 
-	if( BScrollBar* scrollBar = ScrollBar(B_VERTICAL) ) 
+	if (BScrollBar* scrollBar = ScrollBar(B_VERTICAL)) 
 	{
 		BSize minSize = BGroupView::MinSize();
 		float height = Bounds().Height();

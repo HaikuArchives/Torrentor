@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -33,7 +33,7 @@ class InfoTransferView;
 class InfoWindow : public BWindow
 {
 public:
-	InfoWindow(const TorrentObject* torrent);
+	InfoWindow(TorrentObject* torrent);
 
 protected:
 	BView* _CreateInfoPage(float spacing);
@@ -45,9 +45,9 @@ protected:
 	BView* _CreatePeerPage(float spacing);
 	
 private:
-	const TorrentObject*	fTorrent;
-	BTabView*				fTabView;
-	InfoTransferView* 		fTransferView;
+	TorrentObject*		fTorrent;
+	BTabView*			fTabView;
+	InfoTransferView* 	fTransferView;
 };
 
 #endif // TORRENTOR_INSPECTOR_WINDOW_H

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -36,10 +36,9 @@
 #include <FileColumn.h>
 #include <GroupLayout.h>
 #include <GroupLayoutBuilder.h>
+#include <StatusBar.h>
+#include <StringView.h>
 #include <Window.h>
-
-
-
 
 
 
@@ -68,7 +67,7 @@ enum
 	COLUMN_FILE_DOWNLOAD,
 };
 
-AddTorrentWindow::AddTorrentWindow(const TorrentObject* torrent)
+AddTorrentWindow::AddTorrentWindow(TorrentObject* torrent)
 	:	BWindow(BRect(),
 				"Add torrent", 
 				B_TITLED_WINDOW_LOOK,
@@ -81,8 +80,8 @@ AddTorrentWindow::AddTorrentWindow(const TorrentObject* torrent)
 		fTorrent(torrent),
 		fCancelAdd(true)
 {
-	SetLayout(new BGroupLayout(B_VERTICAL));
-	
+	SetPulseRate(1000000);
+	SetLayout(new BGroupLayout(B_VERTICAL));	
 	
 	float spacing = be_control_look->DefaultItemSpacing();
 	
@@ -94,6 +93,12 @@ AddTorrentWindow::AddTorrentWindow(const TorrentObject* torrent)
 	fStartCheckBox 	= new BCheckBox("", "Start when added", NULL);
 	fCancelButton	= new BButton("Cancel", new BMessage(B_QUIT_REQUESTED));
 	fAddButton		= new BButton("Add", new BMessage(MSG_BUTTON_ADD));
+	fLoadingView	= new BStatusBar("", "Downloading Metadata");
+	fLoadingView->SetBarHeight(12);
+	fLoadingView->SetMaxValue(1.0);
+	
+	if( !fTorrent->IsMagnet() )
+		fLoadingView->Hide();
 	
 	fStartCheckBox->SetValue(B_CONTROL_ON);
 	
@@ -106,7 +111,78 @@ AddTorrentWindow::AddTorrentWindow(const TorrentObject* torrent)
 	
 	fFileList->AddColumn(new FileColumn("Name", 400, 400, 500), COLUMN_FILE_NAME);
 	fFileList->AddColumn(new CheckBoxColumn("DL", 40, 40, 40), COLUMN_FILE_DOWNLOAD);
+	
+	//
+	// We're a magnet or a complete torrent file?
+	//
+	if( fTorrent->IsMagnet() )
+	{
+		fTorrent->SetMetadataCallbackHandler(this);
+		//const_cast<TorrentObject*>(fTorrent)->StartTransfer();
+	}
+	else
+		UpdateFileList();
 
+	
+	AddChild(BGroupLayoutBuilder(B_VERTICAL, spacing)
+		.Add(fInfoHeaderView)
+		.AddGlue()
+		.Add(fFileList)
+		.Add(BGroupLayoutBuilder(B_HORIZONTAL, spacing)
+			.SetInsets(spacing, spacing, spacing, spacing)
+			.Add(fStartCheckBox)
+			.AddGlue()
+			.Add(fCancelButton)
+			.Add(fAddButton)
+			.Add(fLoadingView)
+		)
+		.SetInsets(spacing, spacing, spacing, spacing)
+	);
+	
+	CenterOnScreen();
+	Run();
+}
+
+void AddTorrentWindow::MessageReceived(BMessage* message)
+{
+	switch( message->what ) 
+	{
+	case B_PULSE:
+		BWindow::MessageReceived(message);
+		break;
+	case MSG_BUTTON_ADD:
+		OnButtonAddClick();
+		break;
+	case MSG_TRANSMISSION_METADATA_CALLBACK:
+		OnMetadataComplete();
+		break;
+	default:
+		BWindow::MessageReceived(message);
+		break;
+	}
+}
+
+
+
+void AddTorrentWindow::DispatchMessage(BMessage* msg, BHandler* target)
+{
+	if (!msg)
+		return;
+	
+	//
+	// this doesn't work.
+	//
+	if (msg->what == B_PULSE && fTorrent->IsMagnet()) 
+		fLoadingView->SetTo(fTorrent->Statistics()->metadataPercentComplete);
+		
+	//
+	//
+	//
+	BWindow::DispatchMessage(msg, target);
+}
+
+void AddTorrentWindow::UpdateFileList()
+{	
 	//
 	//
 	int 	 fileCount = fTorrent->Info()->fileCount;
@@ -136,43 +212,27 @@ AddTorrentWindow::AddTorrentWindow(const TorrentObject* torrent)
 		
 		fFileList->AddRow(row, i);
 
-	} 
-
-	
-	AddChild(BGroupLayoutBuilder(B_VERTICAL, spacing)
-		.Add(fInfoHeaderView)
-		.AddGlue()
-		.Add(fFileList)
-		.Add(BGroupLayoutBuilder(B_HORIZONTAL, spacing)
-			.SetInsets(spacing, spacing, spacing, spacing)
-			.Add(fStartCheckBox)
-			.AddGlue()
-			.Add(fCancelButton)
-			.Add(fAddButton)
-			//.Add(fCancelButton)
-			//.Add(fApplyButton)
-		)
-		.SetInsets(spacing, spacing, spacing, spacing)
-	);
-	
-	CenterOnScreen();
-	Run();
+	} 	
 }
 
-
-void AddTorrentWindow::MessageReceived(BMessage* message)
+void AddTorrentWindow::OnMetadataComplete()
 {
-	switch( message->what ) 
-	{
-	case MSG_BUTTON_ADD:
-		OnButtonAddClick();
-		break;
-	default:
-		BWindow::MessageReceived(message);
-		break;
-	}
+	//
+	// Pause the torrent to prevent files to be downloaded.
+	// See [TorrentObject::LoadFromMagnet] for more info.
+	//
+	fTorrent->StopTransfer();
+	
+	//
+	//
+	//
+	fInfoHeaderView->Update();
+	
+	//
+	//
+	//
+	UpdateFileList();
 }
-
 
 void AddTorrentWindow::OnButtonAddClick()
 {
@@ -214,7 +274,6 @@ void AddTorrentWindow::OnButtonAddClick()
 	fCancelAdd = false;
 	Quit();
 }
-
 
 bool AddTorrentWindow::QuitRequested()
 {

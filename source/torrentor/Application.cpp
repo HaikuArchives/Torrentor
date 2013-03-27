@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -40,7 +40,7 @@
 #include "TorrentorMessages.h"
 #include "IconUtil.h"
 #include "MainWindow.h"
-#include "AddMagnetWindow.h"
+#include "AddMagnetLinkWindow.h"
 #include "AddTorrentWindow.h"
 #include "Application.h"
 
@@ -117,8 +117,7 @@ TorrentorApp::TorrentorApp()
 	// set up a rectangle and instantiate a new window
 	fMainWindow = new MainWindow(BRect(0, 0, 800, 600));
 			
-	// make window visible
-	fMainWindow->Show();
+
 	
 	
 	fprintf( stderr, "%s", str );
@@ -126,6 +125,9 @@ TorrentorApp::TorrentorApp()
 
 	
 	LoadTorrentList();
+	
+	// make window visible
+	fMainWindow->Show();
 	
 	//
 	//
@@ -471,17 +473,20 @@ void TorrentorApp::LoadTorrentFromMagnet(BString magnetUrl)
 		delete torrentObject;
 		return;
 	}
+	
+	AddTorrentWindow* addTorrentWindow = new AddTorrentWindow(torrentObject);
+	addTorrentWindow->Show();
 		
 	//
 	//
 	//
-	fTorrentList.AddItem(torrentObject);
-		
+	//fTorrentList.AddItem(torrentObject);
+	//	
 	//
 	// If there's a MainWindow created, add torrent.
 	//
-	if( fMainWindow != NULL )
-		fMainWindow->AddTorrent(torrentObject);	
+	//if( fMainWindow != NULL )
+	//	fMainWindow->AddTorrent(torrentObject);	
 }
 
 //
@@ -489,7 +494,7 @@ void TorrentorApp::LoadTorrentFromMagnet(BString magnetUrl)
 //
 void TorrentorApp::OpenMagnetLinkWindow()
 {
-	OpenMagnetWindow* MagnetWindow = new OpenMagnetWindow();
+	AddMagnetLinkWindow* MagnetWindow = new AddMagnetLinkWindow();
 	
 	MagnetWindow->Show();
 }
@@ -530,15 +535,27 @@ void TorrentorApp::OnTorrentComplete(BMessage* message)
 	//
 	//
 	//
-	BString mimePath;
-	mimePath << torrentObject->DownloadFolder() 
-			 << '/' 
-			 << (torrentObject->IsFolder() ? torrentObject->Name() : torrentObject->Info()->files[0].name);
+
 		
 	//
 	// Update the mime info.
 	//
-	update_mime_info(mimePath.String(), torrentObject->IsFolder(), false, B_UPDATE_MIME_INFO_FORCE_KEEP_TYPE);
+	for (int i = 0; i < torrentObject->Info()->fileCount; i++)
+	{
+		//
+		//
+		//
+		BString filePath;
+		filePath << torrentObject->DownloadFolder() 
+				 << '/' 
+				 << torrentObject->Info()->files[i].name;
+			 
+		//
+		//
+		//
+		if (torrentObject->Info()->files[i].dnd == false)
+			update_mime_info(filePath.String(), false, false, B_UPDATE_MIME_INFO_NO_FORCE);
+	}
 	
 		
 	//

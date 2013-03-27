@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -57,7 +57,7 @@
 static const BRect kDefaultFrame = BRect(120, 80, 800, 600);
 
 
-InfoWindow::InfoWindow(const TorrentObject* torrent)
+InfoWindow::InfoWindow(TorrentObject* torrent)
 	:	BWindow(kDefaultFrame, "Torrent Info", 
 				B_TITLED_WINDOW_LOOK,
 				B_NORMAL_WINDOW_FEEL, 

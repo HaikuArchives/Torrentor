@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //	Copyright (c) 2010, Stephan Aßmus <superstippi@gmx.de>.
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -39,6 +39,8 @@ public:
 	~DownloadView();
 
 	virtual BSize MinSize();
+	//virtual BSize MaxSize();
+	//virtual	BSize PreferredSize();
 	
 	virtual void Pulse();
 	virtual void MouseDown(BPoint point);

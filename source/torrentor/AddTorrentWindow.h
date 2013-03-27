@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -29,6 +29,7 @@
 class BButton;
 class BCheckBox;
 class BColumnListView;
+class BStatusBar;
 class InfoHeaderView;
 class TorrentObject;
 
@@ -36,21 +37,25 @@ class TorrentObject;
 class AddTorrentWindow : public BWindow
 {
 public:
-	AddTorrentWindow(const TorrentObject* torrent);
+	AddTorrentWindow(TorrentObject* torrent);
 	
+	virtual void DispatchMessage(BMessage* msg, BHandler* target);
 	void MessageReceived(BMessage* message);
 	bool QuitRequested();
 
 protected:
+	void UpdateFileList();
+	void OnMetadataComplete();
 	void OnButtonAddClick();
 private:
-	const TorrentObject*	fTorrent;
-	bool					fCancelAdd;
-	InfoHeaderView*			fInfoHeaderView;
-	BCheckBox*				fStartCheckBox;
-	BButton*				fCancelButton;
-	BButton*				fAddButton;
-	BColumnListView*		fFileList;
+	TorrentObject*		fTorrent;
+	bool				fCancelAdd;
+	InfoHeaderView*		fInfoHeaderView;
+	BCheckBox*			fStartCheckBox;
+	BButton*			fCancelButton;
+	BButton*			fAddButton;
+	BStatusBar*			fLoadingView;
+	BColumnListView*	fFileList;
 };
 
 #endif // TORRENTOR_ADD_TORRENT_WINDOW_H

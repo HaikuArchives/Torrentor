@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -186,14 +186,13 @@ void InfoGeneralView::UpdateInfo()
 	fHashView->SetText( fTorrent->Info()->hashString );
 	fSecureView->SetText( fTorrent->Info()->isPrivate ? "Private Torrent" : "Public Torrent" );
 	fCommentView->SetText( fTorrent->Info()->comment );
-	
 	fCreatorView->SetText( strlen(fTorrent->Info()->creator) > 0 ? fTorrent->Info()->creator : "N/A" ); // TODO: N/A if empty.
 	
 	strftime(tempBuffer, sizeof(tempBuffer), "%A, %B %d, %Y %X", localtime(&fTorrent->Info()->dateCreated));
 
 	
 	fDateView->SetText( fTorrent->Info()->dateCreated ? tempBuffer : "N/A" );
-	fDataView->SetText( fTorrent->DownloadFolder() );
+	fDataView->SetText(fTorrent->DownloadFolder());
 	
 	
 	BString out_string(fTorrent->Info()->torrent);

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -23,10 +23,12 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
+#include <Application.h>
 #include <Entry.h>
 #include <MimeType.h>
 #include <String.h>
 #include "Torrentor.h"
+#include "TorrentorMessages.h"
 #include "TorrentObject.h"
 
 #define UTF8_INFINITE_CHARACTER	"\xE2\x88\x9E"
@@ -44,7 +46,8 @@ int _TorrentRemoveFileHandler(const char* filename)
 TorrentObject::TorrentObject()
 	:	fTorrentHandle(NULL),
 		fStatistics(NULL),
-		fInfo(NULL)
+		fInfo(NULL),
+		fMetadataHandler(NULL)
 {
 }
 
@@ -88,6 +91,7 @@ bool TorrentObject::LoadFromMagnet(const tr_session* Session, const char* Magnet
 {
 	tr_ctor* ctor = tr_ctorNew(Session);
 	
+
 	tr_ctorSetPaused(ctor, TR_FORCE, TRUE);
 	
 	if( tr_ctorSetMetainfoFromMagnetLink(ctor, MagnetURL) != TR_PARSE_OK )
@@ -98,10 +102,8 @@ bool TorrentObject::LoadFromMagnet(const tr_session* Session, const char* Magnet
 	fTorrentHandle = tr_torrentNew(ctor, NULL);
 	tr_ctorFree(ctor);
 	
-	
 	if( fTorrentHandle == NULL )
-		return false;
-		
+		return false;		
 	
 	fInfo 		= tr_torrentInfo(fTorrentHandle);
 	fStatistics = tr_torrentStat(fTorrentHandle);
@@ -117,9 +119,19 @@ TorrentObject::~TorrentObject()
 
 }
 
+//
+// @INFO: Use TorrentObject::Statistics directly.
+//
 void TorrentObject::Update()
 {
 	fStatistics = tr_torrentStat(fTorrentHandle);
+}
+
+void TorrentObject::SetMetadataCallbackHandler(BHandler* MessageHandler)
+{
+	fMetadataHandler = MessageHandler;
+	
+	tr_torrentSetMetadataCallback(fTorrentHandle, TorrentObject::TorrentMetadataCallback, this);
 }
 
 bool TorrentObject::IsMagnet() const
@@ -170,6 +182,9 @@ BString TorrentObject::Name() const
 
 BString TorrentObject::DownloadFolder() const
 {
+	if( IsFolder() )
+		return BString().SetToFormat("%s/%s", tr_torrentGetDownloadDir(fTorrentHandle), Name().String());
+		
 	return tr_torrentGetDownloadDir(fTorrentHandle);
 }
 
@@ -207,3 +222,25 @@ int TorrentObject::SecondsSeeding() const
 {
     return Statistics()->secondsSeeding;
 }
+
+void TorrentObject::TorrentMetadataCallback(tr_torrent* torrent, void* data)
+{
+	TorrentObject* torrentObject = reinterpret_cast<TorrentObject*>(data);
+	BHandler* handler = torrentObject->fMetadataHandler;
+	
+	//
+	//
+	//
+	if( handler == NULL )
+		return;
+	
+	//
+	// Build the message.
+	//
+	if (BLooper* looper = handler->Looper())
+		looper->PostMessage(new BMessage(MSG_TRANSMISSION_METADATA_CALLBACK), handler);
+}
+
+
+
+

@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -26,6 +26,7 @@
 #ifndef TORRENTOR_TORRENT_OBJECT_H
 #define TORRENTOR_TORRENT_OBJECT_H
 
+class BHandler;
 class BMimeType;
 class BString;
 
@@ -56,6 +57,11 @@ public:
 	
 	int SecondsDownloading() const;
 	int SecondsSeeding() const;
+	
+	//
+	//
+	//
+	void SetMetadataCallbackHandler(BHandler* MessageHandler);
 	
 	//
 	//
@@ -99,7 +105,7 @@ public:
 	//
 	//
 	//
-	const tr_stat* Statistics() const { return fStatistics; }
+	const tr_stat* Statistics() const { return tr_torrentStatCached(fTorrentHandle); }
 	
 	//
 	//
@@ -110,10 +116,20 @@ public:
 	//
 	//
 	const tr_torrent* Handle() const { return fTorrentHandle; }
+	
+	//
+	//
+	//
+	const BHandler* MetadataHandler() const { return fMetadataHandler; }
+	
+protected:
+	//
+	static void TorrentMetadataCallback(tr_torrent* torrent, void* data);
 private:
 	tr_torrent* 	fTorrentHandle;
-	const tr_stat*		fStatistics;
-	const tr_info*		fInfo;
+	const tr_stat*	fStatistics;
+	const tr_info*	fInfo;
+	BHandler*		fMetadataHandler;
 };
 
 

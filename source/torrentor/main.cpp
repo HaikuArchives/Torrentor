@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -38,9 +38,8 @@ int main(int argc, const char** argv)
 	// time to attach Debugger.
 	//snooze(5000000);
 	
-	
 	curl_global_init(CURL_GLOBAL_ALL);
-
+	
 
 	TorrentorApp application;
 

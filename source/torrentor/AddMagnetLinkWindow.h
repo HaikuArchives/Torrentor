@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//	Copyright (c) 2012, Guido Pola.
+//	Copyright (c) 2012-2013, Guido Pola.
 //
 //	Permission is hereby granted, free of charge, to any person obtaining a
 //	copy of this software and associated documentation files (the "Software"),
@@ -19,20 +19,20 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		MainWindow.h
+//	File Name:		AddMagnetLinkWindow.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#ifndef TORRENTOR_OPEN_MAGNET_WINDOW_H
-#define TORRENTOR_OPEN_MAGNET_WINDOW_H
+#ifndef TORRENTOR_ADD_MAGNET_LINK_WINDOW_H
+#define TORRENTOR_ADD_MAGNET_LINK_WINDOW_H
 
 class BString;
 class BTextControl;
 
-class OpenMagnetWindow : public BWindow
+class AddMagnetLinkWindow : public BWindow
 {
 public:
-	OpenMagnetWindow();
+	AddMagnetLinkWindow();
 	
 	void MessageReceived(BMessage* message);
 protected:
@@ -48,4 +48,4 @@ private:
 	BTextControl* fLinkText;
 };
 
-#endif // TORRENTOR_OPEN_MAGNET_WINDOW_H
+#endif // TORRENTOR_ADD_MAGNET_LINK_WINDOW_H
