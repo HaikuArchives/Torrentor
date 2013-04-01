@@ -29,7 +29,7 @@
 #include <curl/curl.h>
 
 
-
+#include <Alert.h>
 #include <AppFileInfo.h>
 #include <File.h>
 #include <Notification.h>
@@ -43,6 +43,10 @@
 #include "AddMagnetLinkWindow.h"
 #include "AddTorrentWindow.h"
 #include "Application.h"
+#include "TorrentPreferences.h"
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "Application"
 
 
 // tr_torrentSetCompletenessCallback
@@ -91,25 +95,25 @@ void TorrentCompletenessHandler(tr_torrent* torrent, tr_completeness completenes
 
 
 TorrentorApp::TorrentorApp()
-	: BApplication("application/x-vnd.Torrentor")
+	:	BApplication("application/x-vnd.Torrentor"),
+		fTorrentSession(NULL)
 {	
-	const char * configDir;
-	
 	tr_formatter_mem_init(1024, "KiB", "MiB", "GiB", "TiB");
 	tr_formatter_size_init(1024, "KiB", "MiB", "GiB", "TiB");
     tr_formatter_speed_init(1024, "KiB/s", "MiB/s", "GiB/s", "TiB/s");
- 
- 	tr_bencInitDict(&fTorrentPreferences, 0 );
- 	tr_sessionGetDefaultSettings(&fTorrentPreferences);
  	
+ 	//
+ 	//
+ 	fTorrentPreferences = new TorrentPreferences;
  	
- 	configDir = tr_getDefaultConfigDir("Torrentor");
- 	
- 
+ 	//
+ 	//
+ 	//
+	fTorrentSession = tr_sessionInit("torrentor", tr_getDefaultConfigDir("Torrentor"), false, fTorrentPreferences->Handle());	
+	char * str 		= tr_bencToStr( fTorrentPreferences->Handle(), TR_FMT_JSON, NULL );
 
-	fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &fTorrentPreferences);	
-	char * str 		= tr_bencToStr( &fTorrentPreferences, TR_FMT_JSON, NULL );
 
+	fTorrentPreferences->SetSession(fTorrentSession);
 	
 	//printf("configDir -> %s\n", configDir);
 
@@ -137,9 +141,10 @@ TorrentorApp::TorrentorApp()
 
 TorrentorApp::~TorrentorApp()
 {
-	//tr_sessionSaveSettings(fTorrentSession, tr_getDefaultConfigDir("Torrentor"), &fTorrentPreferences);
-	//tr_bencFree(&fTorrentPreferences );
+	fTorrentPreferences->Save();
 	tr_sessionClose(fTorrentSession);
+	
+	delete fTorrentPreferences;
 }
 
 void TorrentorApp::MessageReceived(BMessage* message)
@@ -172,6 +177,7 @@ void TorrentorApp::ReadyToRun()
 {
 	SetPulseRate(500000);
 }
+
 
 void TorrentorApp::RefsReceived(BMessage* message)
 {
@@ -211,6 +217,11 @@ void TorrentorApp::Pulse()
 		fMainWindow->Update();
 }
 
+bool TorrentorApp::QuitRequested()
+{
+	return true;
+}
+
 
 //
 //
@@ -219,8 +230,9 @@ void TorrentorApp::CreateSession()
 {
 	//fTorrentSession = tr_sessionInit("torrentor", configDir, true, &settings);
 	//fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &settings);
-
 }
+
+#pragma mark Version checker
 
 //
 // @TODO: rewrite cURL code.
@@ -336,6 +348,7 @@ void TorrentorApp::CheckForUpdates()
 	}
 }
 
+#pragma mark -
 
 //
 //
@@ -540,7 +553,7 @@ void TorrentorApp::OnTorrentComplete(BMessage* message)
 	//
 	// Update the mime info.
 	//
-	for (int i = 0; i < torrentObject->Info()->fileCount; i++)
+	for (unsigned int i = 0; i < torrentObject->Info()->fileCount; i++)
 	{
 		//
 		//

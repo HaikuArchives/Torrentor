@@ -55,6 +55,12 @@
 
 #include <Catalog.h>
 
+//
+#define TR_DEFAULT_AUTO_ADD_TORRENT_FOLDER		"/boot/home/Desktop"
+
+#define TR_PREFS_KEY_AUTO_ADD_TORRENT_ENABLED	"torrentor-auto-add-torrent-enabled"
+#define TR_PREFS_KEY_AUTO_ADD_TORRENT_FOLDER	"torrentor-auto-add-torrent-folder"
+
 
 //
 //

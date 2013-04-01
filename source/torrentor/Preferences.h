@@ -19,39 +19,24 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentRefFilter.cpp
+//	File Name:		Preferences.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#include <cstdio>
-#include "Torrentor.h"
-#include "TorrentRefFilter.h"
+#ifndef TORRENTOR_PREFERENCES_H
+#define TORRENTOR_PREFERENCES_H
 
-//
-//
-//
-const BMimeType TorrentMimeType("application/x-bittorrent");
+struct tr_benc;
 
-
-//
-//
-//
-bool TorrentRefFilter::Filter(const entry_ref* ref, BNode* node,
-	struct stat_beos* stat, const char* filetype)
+class Preferences
 {
-	if (node == NULL)
-		return false;
-	
-	if (node->IsDirectory())
-		return true;
-	
-	//
-	//
-	//
-	if (TorrentMimeType == filetype)
-		return true;
-	
-	
-	return false;
-}
+public:
+	Preferences(const tr_session* session);
+	~Preferences();
 
+private:
+	tr_benc	fHandle;	
+};
+
+
+#endif // TORRENTOR_PREFERENCES_H

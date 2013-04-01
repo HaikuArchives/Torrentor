@@ -23,54 +23,42 @@
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-
-
-#include "Torrentor.h"
-#include "TorrentorMessages.h"
-
-#include <Autolock.h>
+#include <Alert.h>
 #include <Application.h>
-#include <MenuBar.h>
+#include <Autolock.h>
+#include <GroupLayout.h>
+#include <GroupLayoutBuilder.h>
+#include <ListItem.h>
+#include <ListView.h>
 #include <Menu.h>
+#include <MenuBar.h>
 #include <MenuItem.h>
-
-#include <StatusBar.h>
-#include <StringView.h>
-#include <ScrollView.h>
-
 #include <Notification.h>
 #include <Roster.h>
+#include <ScrollView.h>
+#include <SpaceLayoutItem.h>
+#include <StatusBar.h>
+#include <StringView.h>
 
-#include <ListView.h>
-#include <ListItem.h>
 
 #include <assert.h>
 
+#include "Torrentor.h"
+#include "TorrentorMessages.h"
+#include "Application.h"
 #include "MainWindow.h"
-
-
 #include "ToolBar.h"
-
-#include <GroupLayout.h>
-#include <GroupLayoutBuilder.h>
-
-#include <ControlLook.h>
-
-
 #include "TorrentRefFilter.h"
-
-#include <SpaceLayoutItem.h>
-
 #include "IconView.h"
 #include "DownloadView.h"
 #include "DownloadItem.h"
-
 #include "InfoWindow.h"
-
-
 #include "PreferencesWindow.h"
 
-#include <Alert.h>
+
+
+#undef B_TRANSLATION_CONTEXT
+#define B_TRANSLATION_CONTEXT "MainWindow"
 
 
 enum 
@@ -181,19 +169,19 @@ void MainWindow::CreateMenuBar()
 	//
 	fMenuBar = new BMenuBar(BRect(0, 0, 0, 0), "MainMenuBar");
 	
-	BMenu* menu = new BMenu("File");
+	BMenu* menu = new BMenu(B_TRANSLATE("File"));
 	
 	//
 	//
 	//
 	//menu->AddItem(new BMenuItem("New Torrent", NULL));
-	menu->AddItem(new BMenuItem("Open Torrent", new BMessage(MENU_FILE_OPEN_TORRENT), 'O'));
-	menu->AddItem(new BMenuItem("Open From Magnet", new BMessage(MENU_FILE_OPEN_TORRENT_URL), 'M'));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Open Torrent"), new BMessage(MENU_FILE_OPEN_TORRENT), 'O'));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Open From Magnet"), new BMessage(MENU_FILE_OPEN_TORRENT_URL), 'M'));
 	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem("Start All Torrents", NULL));
-	menu->AddItem(new BMenuItem("Pause All Torrent", NULL));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Start All Torrents"), NULL));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Pause All Torrent"), NULL));
 	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem("Quit", new BMessage(B_QUIT_REQUESTED), 'Q'));
+	menu->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(B_QUIT_REQUESTED), 'Q'));
 	
 	//menu->AddItem(new BMenuItem("Open" B_UTF8_ELLIPSIS, new BMessage(MENU_FILE_OPEN), 'O'));
 	
@@ -289,8 +277,29 @@ void MainWindow::MessageReceived(BMessage* message)
 
 bool MainWindow::QuitRequested()
 {
+	bool downloading = !static_cast<TorrentorApp*>(be_app)->TorrentList().IsEmpty();
+	
+	//
+	//
+	//
+	//for (int32 i = fTorrentList.CountItems(); i > 0; i--) {
+	//	const TorrentObject* torrent = fTorrentList.ItemAt(i);
+	//	
+	//	active |= torrent->IsActive();
+	//}
+	
+	//
+	if (downloading) {
+		BAlert* confirmAlert = new BAlert("", B_TRANSLATE("Quit Torrentor!?"),
+			B_TRANSLATE("Cancel"), B_TRANSLATE("Quit"), NULL, B_WIDTH_AS_USUAL, B_OFFSET_SPACING, B_WARNING_ALERT);
+
+		confirmAlert->SetShortcut(0, B_ESCAPE);
+	
+		if (confirmAlert->Go() == 0)
+			return false;
+	}
 	be_app->PostMessage(B_QUIT_REQUESTED);
-	return(true);
+	return true;
 }
 
 

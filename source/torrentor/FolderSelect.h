@@ -27,24 +27,48 @@
 #define TORRENTOR_FOLDER_SELECT_H
 
 #include <Bitmap.h>
+#include <Button.h>
 
-class FolderSelect : public BView
+class BPath;
+class BSize;
+class BFilePanel;
+
+class FolderSelect : public BButton
 {
 public:
 	FolderSelect(const char* name,
-				 const char* label,
-				 const char* path = NULL,
+				 const char* path,
+				 BMessage* message = NULL,
 				 uint32 flags = B_WILL_DRAW | B_NAVIGABLE);
+				 
+	virtual ~FolderSelect();
 	
-	void AttachedToWindow();
-	void Draw(BRect updateFrame);
+	virtual void AttachedToWindow();
+	virtual void MessageReceived(BMessage* message);
+	virtual void Draw(BRect updateFrame);
+	virtual void MouseMoved(BPoint where, uint32 transit, const BMessage* message);
 
-
+	virtual	void	GetPreferredSize(float* _width, 
+						float* _height);
 	virtual BSize MinSize();
-	//virtual BSize PreferredSize();
 	virtual BSize MaxSize();
+	virtual BSize PreferredSize();
+	
+	
+	virtual status_t Invoke(BMessage* message = NULL);
+	
+	void OnRefReceived(BMessage* message);
+protected:
+	virtual	void				LayoutInvalidated(bool descendants = false);
 private:
+	void	_UpdateIconBitmap();
+	BSize 	_ValidatePreferredSize();
+private:
+	bool	fActive;
+	BPath	fFolderPath;
 	BBitmap	fIconBitmap;
+	BSize	fPreferredSize;
+	BFilePanel* fFilePanel;
 };
 
 

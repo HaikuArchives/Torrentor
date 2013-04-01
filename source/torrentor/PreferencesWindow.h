@@ -30,19 +30,29 @@ class BButton;
 class BCheckBox;
 class BTextControl;
 class BView;
+class FolderSelect;
+class TorrentPreferences;
+
+struct tr_session;
 
 class PreferencesWindow : public BWindow
 {
 public:
 	PreferencesWindow();
 	
+	void MessageReceived(BMessage* message);
 	bool QuitRequested();
 protected:
 	BView*	_CreateTorrentsPage(float spacing);
+	void 	OnDownloadFolderChanged(BMessage* message);
+	void	OnIncompleteFolderChanged(BMessage* message);
 private:
-	BButton*		fApplyButton;
-	BCheckBox*		fAutoAddTorrentsFrom;
-	BTextControl*	fAutoAddTorrentsFromFolder;
+	TorrentPreferences*	fTorrentPreferences;
+	BButton*			fApplyButton;
+	BCheckBox* 			fIncompleteFileNaming;
+	FolderSelect* 		fTorrentSaveLocationPath;
+	BCheckBox* 			fIncompleteDirEnabled;
+	FolderSelect* 		fIncompleteDirPath;
 };
 
 
