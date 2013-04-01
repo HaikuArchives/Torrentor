@@ -37,8 +37,6 @@
 #include "IconView.h"
 #include "InfoHeaderView.h"
 
-static const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
-
 InfoHeaderView::InfoHeaderView(TorrentObject* torrent)
 	:	BGroupView(B_HORIZONTAL, 0),
 		fTorrent(torrent)

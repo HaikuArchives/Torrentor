@@ -4,12 +4,18 @@ KEEPOBJS = true ;
 #
 # The directories used by the build
 #
-if ( $(NDEBUG) ) {
+if ($(NDEBUG)) {
 	PROJECT_BUILD_DIR 			= [ FDirName $(PROJECT_TOP) build ] ;
 	PROJECT_BUILD_OUTPUT_DIR	= [ FDirName $(PROJECT_TOP) build Release ] ;
+	PROJECT_BUILD_OBJECT_DIR	= [ FDirName $(PROJECT_TOP) build Release objects ] ;
+	PROJECT_BUILD_CATALOGS_DIR	= [ FDirName $(PROJECT_TOP) build Debug catalogs ] ;
+	PROJECT_CATALOGS_DIR		= [ FDirName $(PROJECT_TOP) catalogs ] ;
 } else {
 	PROJECT_BUILD_DIR 			= [ FDirName $(PROJECT_TOP) build ] ;
 	PROJECT_BUILD_OUTPUT_DIR 	= [ FDirName $(PROJECT_TOP) build Debug ] ;
+	PROJECT_BUILD_OBJECT_DIR	= [ FDirName $(PROJECT_TOP) build Debug objects ] ;
+	PROJECT_BUILD_CATALOGS_DIR	= [ FDirName $(PROJECT_TOP) build Debug catalogs ] ;
+	PROJECT_CATALOGS_DIR		= [ FDirName $(PROJECT_TOP) catalogs ] ;
 }
 
 #
@@ -18,4 +24,5 @@ if ( $(NDEBUG) ) {
 include [ FDirName $(PROJECT_BUILD_DIR) ConfigRules ] ;
 include [ FDirName $(PROJECT_BUILD_DIR) OverriddenJamRules ] ;
 include [ FDirName $(PROJECT_BUILD_DIR) MainBuildRules ] ;
+include [ FDirName $(PROJECT_BUILD_DIR) LocaleRules ] ;
 include [ FDirName $(PROJECT_BUILD_DIR) BuildSettings ] ;

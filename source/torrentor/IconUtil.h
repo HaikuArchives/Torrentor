@@ -26,15 +26,20 @@
 #ifndef TORRENTOR_ICON_UTIL_H
 #define TORRENTOR_ICON_UTIL_H
 
+#include <Mime.h>
+
 class BBitmap;
 class BString;
 
 //
 //
 //
-const BBitmap* GetIconFromMime(BString MimeType);
-const BBitmap* GetIconFromExtension(BString FileExtension);
+const BBitmap* GetIconFromMime(BString MimeType, icon_size size = B_LARGE_ICON);
+const BBitmap* GetIconFromExtension(BString FileExtension, icon_size size = B_LARGE_ICON);
 //const BBitmap* GetIconFromFilePath(BString FilePath);
+
+
+extern const char* B_DIRECTORY_MIME_TYPE;
 
 
 #endif // TORRENTOR_ICON_UTIL_H

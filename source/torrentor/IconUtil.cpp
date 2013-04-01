@@ -24,25 +24,30 @@
 //	Description:	Provides icon cache support.
 //	TODO:			- Load default icon for unknow mimes.
 //					- Cleanup, move to a class [IconCache]?.
+//					- Replace the default icons bitmap objects 
+//					  [fDefaultIconLargeBitmap, fDefaultIconMiniBitmap] with
+//					  IconCache_t object.
 //------------------------------------------------------------------------------
 #include <cstring>
 
 #include <Bitmap.h>
+#include <Mime.h>
 #include <StringList.h>
 
 #include "Torrentor.h"
 #include "IconUtil.h"
 
+const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
 
 
-
-bool FindIconFromMime(BString& MimeType, BBitmap* Icon);
+bool FindIconFromMime(BString& MimeType, BBitmap* IconLarge, BBitmap* IconMini);
 bool MimeSupportFileExtension(BString& MimeType, BString& FileExtension);
 
 
 struct IconCache_t
 {
-	BBitmap*	fIcon;
+	BBitmap*	fIconLarge;
+	BBitmap*	fIconMini;
 	BString		fIconMime;
 	BStringList	fExtensionList;
 };
@@ -50,22 +55,30 @@ struct IconCache_t
 //
 // @TODO: Cleanup ObjectList.
 //
-BObjectList<IconCache_t> IconObjectList;
-BBitmap*				 DefaultIconBitmap = NULL;
+BObjectList<IconCache_t> 	fIconObjectList;
+bool						fDefaultIconInitialized = false;
+BBitmap*				 	fDefaultIconLargeBitmap = NULL;
+BBitmap*				 	fDefaultIconMiniBitmap = NULL;
 
+const BRect					ICON_LARGE_RECT(0, 0, B_LARGE_ICON - 1, B_LARGE_ICON - 1);
+const BRect					ICON_MINI_RECT(0, 0, B_MINI_ICON - 1, B_MINI_ICON - 1);
 
-const BBitmap* DefaultIcon()
+const BBitmap* DefaultIcon(icon_size size)
 {
-	if( DefaultIconBitmap == NULL )
+	BString mime = B_FILE_MIME_TYPE;
+	
+	if( !fDefaultIconInitialized )
 	{
-		BString mime = B_FILE_MIME_TYPE;
-		DefaultIconBitmap = new BBitmap(BRect(0, 0, 31, 31), 0, B_RGBA32);
-		FindIconFromMime(mime, DefaultIconBitmap);
+		fDefaultIconLargeBitmap = new BBitmap(ICON_LARGE_RECT, 0, B_RGBA32);
+		fDefaultIconMiniBitmap = new BBitmap(ICON_MINI_RECT, 0, B_RGBA32);
+		FindIconFromMime(mime, fDefaultIconLargeBitmap, fDefaultIconMiniBitmap);
+		
+		fDefaultIconInitialized = true;
 	}
-	return DefaultIconBitmap;
+	return (size == B_LARGE_ICON) ? fDefaultIconLargeBitmap : fDefaultIconMiniBitmap;
 }
 
-bool FindIconFromMime(BString& MimeType, BBitmap* Icon)
+bool FindIconFromMime(BString& MimeType, BBitmap* IconLarge, BBitmap* IconMini)
 {
 	char 		preferred[B_MIME_TYPE_LENGTH];
 	BMimeType 	mime(MimeType);
@@ -73,23 +86,25 @@ bool FindIconFromMime(BString& MimeType, BBitmap* Icon)
 	//
 	//
 	//	
-	if( Icon == NULL )
+	if (IconLarge == NULL || IconMini == NULL)
 		return false;
 	
 	//
 	// Get the icon
 	//
-	if( mime.GetIcon(Icon, B_LARGE_ICON) == B_OK )
+	if (mime.GetIcon(IconLarge, B_LARGE_ICON) == B_OK &&
+		mime.GetIcon(IconMini, B_MINI_ICON) == B_OK)
 		return true;
 	
 	//
 	// Try to get the icon from preferred app
 	//		
-	if( mime.GetPreferredApp(preferred) == B_OK) 
+	if (mime.GetPreferredApp(preferred) == B_OK) 
 	{
 		BMimeType preferredApp(preferred);
 
-		if( preferredApp.GetIconForType(MimeType, Icon, B_LARGE_ICON) == B_OK )
+		if (preferredApp.GetIconForType(MimeType, IconLarge, B_LARGE_ICON) == B_OK &&
+			preferredApp.GetIconForType(MimeType, IconMini, B_MINI_ICON) == B_OK)
 			return true;
 	}
 	
@@ -98,17 +113,19 @@ bool FindIconFromMime(BString& MimeType, BBitmap* Icon)
 	//
 	BMimeType superType;
 		
-	if( mime.GetSupertype(&superType) == B_OK ) 
+	if (mime.GetSupertype(&superType) == B_OK ) 
 	{
-		if (superType.GetIcon(Icon, B_LARGE_ICON) == B_OK)
+		if (superType.GetIcon(IconLarge, B_LARGE_ICON) == B_OK &&
+			superType.GetIcon(IconMini, B_MINI_ICON) == B_OK)
 				return true;
 
 		// check the super type's preferred app
-		if( superType.GetPreferredApp(preferred) == B_OK ) 
+		if (superType.GetPreferredApp(preferred) == B_OK)
 		{
 			BMimeType preferredApp(preferred);
 
-			if( preferredApp.GetIconForType(superType.Type(), Icon, B_LARGE_ICON) == B_OK)
+			if (preferredApp.GetIconForType(superType.Type(), IconLarge, B_LARGE_ICON) == B_OK &&
+				preferredApp.GetIconForType(superType.Type(), IconMini, B_MINI_ICON) == B_OK)
 				return true;
 		}
 	}
@@ -119,7 +136,7 @@ bool FindIconFromMime(BString& MimeType, BBitmap* Icon)
 //
 //
 //
-const BBitmap* CreateIconCacheFromMime(BString& MimeType)
+const BBitmap* CreateIconCacheFromMime(BString& MimeType, icon_size size)
 {
 	BMimeType 	 mime(MimeType);
 	IconCache_t* IconCache = new IconCache_t;
@@ -128,16 +145,17 @@ const BBitmap* CreateIconCacheFromMime(BString& MimeType)
 	//
 	//
 	IconCache->fIconMime = MimeType;
-	IconCache->fIcon 	 = new BBitmap(BRect(0, 0, 31, 31), 0, B_RGBA32);
+	IconCache->fIconLarge= new BBitmap(ICON_LARGE_RECT, 0, B_RGBA32);
+	IconCache->fIconMini = new BBitmap(ICON_MINI_RECT, 0, B_RGBA32);
 	
 	
 	//
 	// If we don't get any icon, put the default.
 	//
-	if( !FindIconFromMime(MimeType, IconCache->fIcon) )
+	if( !FindIconFromMime(MimeType, IconCache->fIconLarge, IconCache->fIconMini) )
 	{
 		delete IconCache;
-		return DefaultIcon();
+		return DefaultIcon(size);
 	}
 	
 	//
@@ -165,15 +183,15 @@ const BBitmap* CreateIconCacheFromMime(BString& MimeType)
 	//
 	//
 	//
-	IconObjectList.AddItem(IconCache);
+	fIconObjectList.AddItem(IconCache);
 	
-	return IconCache->fIcon;
+	return (size == B_LARGE_ICON) ? IconCache->fIconLarge : IconCache->fIconMini;
 }
 
 //
 //
 //
-const BBitmap* CreateIconCacheFromExtension(BString& FileExtension)
+const BBitmap* CreateIconCacheFromExtension(BString& FileExtension, icon_size size)
 {
 	BMessage 	 types;
 	BString 	 MimeType = B_EMPTY_STRING;
@@ -182,7 +200,7 @@ const BBitmap* CreateIconCacheFromExtension(BString& FileExtension)
 	
 	
 	if( BMimeType::GetInstalledTypes(&types) != B_OK )
-		return DefaultIcon();
+		return DefaultIcon(size);
 
 	
 	//
@@ -201,7 +219,7 @@ const BBitmap* CreateIconCacheFromExtension(BString& FileExtension)
 	}
 	
 	if( !MimeFound )
-		return DefaultIcon();
+		return DefaultIcon(size);
 
 
 	IconCache_t* IconCache = new IconCache_t;
@@ -210,16 +228,17 @@ const BBitmap* CreateIconCacheFromExtension(BString& FileExtension)
 	//
 	//
 	IconCache->fIconMime = MimeType;
-	IconCache->fIcon 	 = new BBitmap(BRect(0, 0, 31, 31), 0, B_RGBA32);
+	IconCache->fIconLarge= new BBitmap(ICON_LARGE_RECT, 0, B_RGBA32);
+	IconCache->fIconMini = new BBitmap(ICON_MINI_RECT, 0, B_RGBA32);
 	
 	
 	//
 	// If we don't get any icon, put the default.
 	//
-	if( !FindIconFromMime(MimeType, IconCache->fIcon) )
+	if( !FindIconFromMime(MimeType, IconCache->fIconLarge, IconCache->fIconMini) )
 	{
 		delete IconCache;
-		return DefaultIcon();
+		return DefaultIcon(size);
 	}
 	
 	//
@@ -248,28 +267,28 @@ const BBitmap* CreateIconCacheFromExtension(BString& FileExtension)
 	//
 	//
 	//
-	IconObjectList.AddItem(IconCache);
+	fIconObjectList.AddItem(IconCache);
 	
-	return IconCache->fIcon;
+	return (size == B_LARGE_ICON) ? IconCache->fIconLarge : IconCache->fIconMini;
 }
 
 //
 //
 //
-const BBitmap* GetIconFromMimeCache(BString& MimeType)
+const BBitmap* GetIconFromMimeCache(BString& MimeType, icon_size size)
 {
 	//
 	//
 	//
-	for( int32 i = 0; i < IconObjectList.CountItems(); ++i ) 
+	for( int32 i = 0; i < fIconObjectList.CountItems(); ++i ) 
 	{	
 		//
 		//
 		//
-		if( const IconCache_t* IconCache = IconObjectList.ItemAt(i) )
+		if( const IconCache_t* IconCache = fIconObjectList.ItemAt(i) )
 		{
 			if( IconCache->fIconMime == MimeType )
-				return IconCache->fIcon;
+				return (size == B_LARGE_ICON) ? IconCache->fIconLarge : IconCache->fIconMini;
 		}
 	}
 	return NULL;
@@ -278,20 +297,20 @@ const BBitmap* GetIconFromMimeCache(BString& MimeType)
 //
 //
 //
-const BBitmap* GetIconFromExtensionCache(BString FileExtension)
+const BBitmap* GetIconFromExtensionCache(BString FileExtension, icon_size size)
 {
 	//
 	//
 	//
-	for( int32 i = 0; i < IconObjectList.CountItems(); ++i ) 
+	for( int32 i = 0; i < fIconObjectList.CountItems(); ++i ) 
 	{	
 		//
 		//
 		//
-		if( const IconCache_t* IconCache = IconObjectList.ItemAt(i) )
+		if( const IconCache_t* IconCache = fIconObjectList.ItemAt(i) )
 		{
 			if( IconCache->fExtensionList.HasString(FileExtension, true) ) 
-				return IconCache->fIcon;
+				return (size == B_LARGE_ICON) ? IconCache->fIconLarge : IconCache->fIconMini;
 		}
 	}
 	return NULL;
@@ -300,26 +319,26 @@ const BBitmap* GetIconFromExtensionCache(BString FileExtension)
 //
 //
 //
-const BBitmap* GetIconFromMime(BString MimeType)
+const BBitmap* GetIconFromMime(BString MimeType, icon_size size)
 {
-	if( const BBitmap* Icon = GetIconFromMimeCache(MimeType) )
+	if( const BBitmap* Icon = GetIconFromMimeCache(MimeType, size) )
 		return Icon;
 	
 	//
 	//
 	//
-	return CreateIconCacheFromMime(MimeType);
+	return CreateIconCacheFromMime(MimeType, size);
 }
 
-const BBitmap* GetIconFromExtension(BString FileExtension)
+const BBitmap* GetIconFromExtension(BString FileExtension, icon_size size)
 {
-	if( const BBitmap* Icon = GetIconFromExtensionCache(FileExtension) )
+	if( const BBitmap* Icon = GetIconFromExtensionCache(FileExtension, size) )
 		return Icon;
 	
 	//
 	//
 	//
-	return CreateIconCacheFromExtension(FileExtension);
+	return CreateIconCacheFromExtension(FileExtension, size);
 }
 
 

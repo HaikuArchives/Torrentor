@@ -31,7 +31,7 @@ local defines = [ FDefines BUILDING_HAIKU__=1
 #
 # To turn off debugging symbols export NDEBUG=1 in the environment
 #
-SubDirC++Flags $(defines) -Wno-c++0x-compat ;
+SubDirC++Flags $(defines) -Wno-c++0x-compat -Wno-unknown-pragmas ;
 SubDirCcFlags $(defines) -Wno-c++0x-compat ;
 
 #
@@ -76,6 +76,7 @@ Application Torrentor :
 	
 	#
 	TorrentObject.cpp
+	TorrentPreferences.cpp
 	TorrentRefFilter.cpp
 	
 	#
@@ -104,4 +105,8 @@ Application Torrentor :
     Torrentor.rdef
 ;
 
+#
+DoCatalogs Torrentor : x-vnd.Torrentor : 
+	MainWindow.cpp
+;
 

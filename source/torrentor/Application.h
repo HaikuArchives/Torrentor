@@ -37,6 +37,7 @@ struct tr_benc;
 
 class TorrentObject;
 class MainWindow;
+class TorrentPreferences;
 class BStringList;
 
 
@@ -49,7 +50,9 @@ public:
 	//
 	//
 	//
-	const tr_session* Session() const;
+	const tr_session* 					Session() const;
+	TorrentPreferences*					Preferences() const { return fTorrentPreferences; }
+	const BObjectList<TorrentObject>& 	TorrentList() const { return fTorrentList; }
 	
 	//
 	//
@@ -59,6 +62,7 @@ public:
 	void ArgvReceived(int32 argc, char** argv);
 	void Pulse();
 	void ReadyToRun();
+	bool QuitRequested();
 	
 protected:
 	void CreateSession();
@@ -82,13 +86,9 @@ protected:
 
 
 private:
-	tr_session*	fTorrentSession;
-	
-	// @TODO: Move it to a class.
-	//		  i.e [TorrentPreferences]
-	tr_benc		fTorrentPreferences;
-
-	MainWindow*	fMainWindow;
+	tr_session*			fTorrentSession;
+	TorrentPreferences*	fTorrentPreferences;
+	MainWindow*			fMainWindow;
 	
 	BObjectList<TorrentObject>	fTorrentList;
 };

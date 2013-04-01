@@ -19,39 +19,46 @@
 //	FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 //	DEALINGS IN THE SOFTWARE.
 //
-//	File Name:		TorrentRefFilter.cpp
+//	File Name:		TorrentPreferences.h
 //	Authors:		Guido Pola <prodito@live.com>
 //	Description:	
 //------------------------------------------------------------------------------
-#include <cstdio>
-#include "Torrentor.h"
-#include "TorrentRefFilter.h"
+#ifndef TORRENTOR_TORRENT_PREFERENCES_H
+#define TORRENTOR_TORRENT_PREFERENCES_H
 
-//
-//
-//
-const BMimeType TorrentMimeType("application/x-bittorrent");
+struct tr_benc;
+struct tr_session;
 
-
-//
-//
-//
-bool TorrentRefFilter::Filter(const entry_ref* ref, BNode* node,
-	struct stat_beos* stat, const char* filetype)
+class TorrentPreferences
 {
-	if (node == NULL)
-		return false;
+public:
+	TorrentPreferences();
+	~TorrentPreferences();
 	
-	if (node->IsDirectory())
-		return true;
+	void Save();
 	
 	//
-	//
-	//
-	if (TorrentMimeType == filetype)
-		return true;
+	bool	StartWhenAddedEnabled();
+	bool 	AutoAddTorrentEnabled();
+	BString	AutoAddTorrentPath();
+	bool	IncompleteFileNamingEnabled();
+	BString DownloadFolder();
+	bool	IncompleteFolderEnabled();
+	BString IncompleteFolder();
 	
+	//
+	void	StartWhenAddedToggle();
+	void 	IncompleteFileNamingToggle();
+	void	IncompleteFolderToggle();
+	void	SetDownloadFolder(BString path);
+	void	SetIncompleteFolder(BString path);
 	
-	return false;
-}
+	void SetSession(tr_session* session) { fSession = session; }
+	tr_benc*	Handle() { return &fHandle; }
+private:
+	tr_session*	fSession;
+	tr_benc		fHandle;
+};
 
+
+#endif // TORRENTOR_TORRENT_PREFERENCES_H

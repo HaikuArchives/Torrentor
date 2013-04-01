@@ -33,7 +33,7 @@
 
 #define UTF8_INFINITE_CHARACTER	"\xE2\x88\x9E"
 
-static const char* B_DIRECTORY_MIME_TYPE = "application/x-vnd.Be-directory";
+extern const char* B_DIRECTORY_MIME_TYPE;
 
 int _TorrentRemoveFileHandler(const char* filename)
 {
