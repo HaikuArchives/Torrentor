@@ -93,22 +93,22 @@ InfoTransferView::InfoTransferView(const TorrentObject* torrent)
 	seedTimeLabel->SetExplicitAlignment(BAlignment(B_ALIGN_RIGHT, B_ALIGN_TOP));
 	
 	fStateView 		= new BStringView("", "");
-	fProgressView 	= new BStringView("", "57.15% (57.15% selected)");
-	fHaveView 		= new BStringView("", "695.7 MB (680.3 MB verified)");
-	fDownloadedView	= new BStringView("", "701.1 MB");
-	fUploadedView	= new BStringView("", "2.8 KB");
-	fFailedView		= new BStringView("", "0 KB");
-	fRatioView		= new BStringView("", "0.00");
+	fProgressView 	= new BStringView("", "");
+	fHaveView 		= new BStringView("", "");
+	fDownloadedView	= new BStringView("", "");
+	fUploadedView	= new BStringView("", "");
+	fFailedView		= new BStringView("", "");
+	fRatioView		= new BStringView("", "");
 	
 	char FormatBuffer[256];
 	
 	strftime(FormatBuffer, sizeof(FormatBuffer), "%A, %B %d, %Y %X", localtime(&fTorrent->Statistics()->addedDate));
 	
 	fAddedView 		= new BStringView("", FormatBuffer);
-	fCompletedView 	= new BStringView("", "N/A");
-	fLastActivityView = new BStringView("", "N/A");
-	fDownloadTimeView = new BStringView("", "20 minutes, 35 seconds.");
-	fSeedTimeView 	= new BStringView("", "0 seconds.");
+	fCompletedView 	= new BStringView("", "");
+	fLastActivityView = new BStringView("", "");
+	fDownloadTimeView = new BStringView("", "");
+	fSeedTimeView 	= new BStringView("", "");
 	
 		
 	

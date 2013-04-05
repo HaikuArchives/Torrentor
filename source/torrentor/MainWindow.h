@@ -33,6 +33,7 @@
 
 //
 //
+class BMenu;
 //
 class DownloadView;
 class PreferencesWindow;
@@ -71,6 +72,11 @@ private:
 	//BFilePanel*		mFilePanel;	
 	BFilePanel*			fOpenPanel;
 	BMenuBar* 			fMenuBar;
+	BMenu*				fMenuFile;
+	BMenu*				fMenuEdit;
+	BMenu*				fMenuTorrent;
+	BMenu*				fMenuView;
+	BMenu*				fMenuHelp;
 	DownloadView*		fDownloadView;
 	PreferencesWindow*	fPreferencesWindow;
 };

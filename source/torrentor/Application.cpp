@@ -136,7 +136,8 @@ TorrentorApp::TorrentorApp()
 	//
 	//
 	//
-	CheckForUpdates();
+	//CheckForUpdates();
+	_CheckMimeTypeAssociation();
 }
 
 TorrentorApp::~TorrentorApp()
@@ -188,17 +189,14 @@ void TorrentorApp::RefsReceived(BMessage* message)
 	//
 	//
 	//
-	while( message->FindRef("refs", index++, &ref) == B_OK )
-	{
+	while (message->FindRef("refs", index++, &ref) == B_OK) {
 		BEntry FileEntry(&ref);
 		BPath  FilePath;
 		
 		FileEntry.GetPath(&FilePath);
-		
 		TorrentPathList.Add(FilePath.Path());
 	}
 	LoadTorrentFromFiles(TorrentPathList);
-
 }
 
 void TorrentorApp::ArgvReceived(int32 argc, char** argv)
@@ -230,6 +228,29 @@ void TorrentorApp::CreateSession()
 {
 	//fTorrentSession = tr_sessionInit("torrentor", configDir, true, &settings);
 	//fTorrentSession = tr_sessionInit("torrentor", configDir, FALSE, &settings);
+}
+
+
+void TorrentorApp::_CheckMimeTypeAssociation()
+{
+	BMimeType torrent_mime("application/x-bittorrent");
+	//BMimeType magnet_mime("application/x-vnd.Be.URL.magnet");
+	
+	char preferred[B_MIME_TYPE_LENGTH];
+	
+	if (torrent_mime.GetPreferredApp(preferred) != B_OK)
+		return;
+	
+	if (strcmp("application/x-vnd.Torrentor", preferred) == 0)
+		return;
+		
+	BAlert* updatePreferredAlert = new BAlert("", "Torrentor is not the default application to open torrent's files.\n\n"
+		"Do you want to make Torrentor the default application to open torrent files?...",
+    	"Cancel", "Accept", NULL, B_WIDTH_FROM_LABEL, B_EVEN_SPACING, B_IDEA_ALERT);
+
+	//	
+	if (updatePreferredAlert->Go() == 1)
+		torrent_mime.SetPreferredApp("application/x-vnd.Torrentor");
 }
 
 #pragma mark Version checker

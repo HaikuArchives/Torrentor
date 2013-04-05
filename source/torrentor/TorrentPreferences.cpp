@@ -101,6 +101,52 @@ BString TorrentPreferences::IncompleteFolder()
 	return tr_sessionGetIncompleteDir(fSession);	
 }
 
+uint16 TorrentPreferences::IncomingPort()
+{
+	return tr_sessionGetPeerPort(fSession);	
+}
+
+bool TorrentPreferences::PortForwardingEnabled()
+{
+	return tr_sessionIsPortForwardingEnabled(fSession);	
+}
+
+uint16 TorrentPreferences::PeerLimit()
+{
+	return tr_sessionGetPeerLimit(fSession);	
+}
+
+uint16 TorrentPreferences::PeerLimitPerTorrent()
+{
+	return tr_sessionGetPeerLimitPerTorrent(fSession);	
+}
+
+bool TorrentPreferences::DistributedHashTableEnabled()
+{
+	return tr_sessionIsDHTEnabled(fSession);
+}
+
+bool TorrentPreferences::PeerExchangeEnabled()
+{
+	return tr_sessionIsPexEnabled(fSession);	
+}
+
+bool TorrentPreferences::MicroTransportProtocolEnabled()
+{
+	return tr_sessionIsUTPEnabled(fSession);
+}
+
+bool TorrentPreferences::LocalPeerDiscoveryEnabled()
+{
+	return tr_sessionIsLPDEnabled(fSession);
+}
+
+tr_encryption_mode TorrentPreferences::EncryptionMode()
+{
+	return tr_sessionGetEncryption(fSession);
+}
+
+
 #pragma mark - Set config value
 
 void TorrentPreferences::StartWhenAddedToggle()
@@ -118,7 +164,6 @@ void TorrentPreferences::IncompleteFolderToggle()
 	tr_sessionSetIncompleteDirEnabled(fSession, !IncompleteFolderEnabled());
 }
 
-
 void TorrentPreferences::SetDownloadFolder(BString path)
 {
 	tr_sessionSetDownloadDir(fSession, path.String());
@@ -128,4 +173,55 @@ void TorrentPreferences::SetIncompleteFolder(BString path)
 {
 	tr_sessionSetIncompleteDir(fSession, path.String());
 }
+
+void TorrentPreferences::SetIncomingPort(uint16 port)
+{
+	tr_sessionSetPeerPort(fSession, port);
+}
+
+uint16 TorrentPreferences::SetIncomingRandomPort()
+{
+	return tr_sessionSetPeerPortRandom(fSession);	
+}
+
+void TorrentPreferences::PortForwardingToggle()
+{
+	tr_sessionSetPortForwardingEnabled(fSession, !PortForwardingEnabled());
+}
+
+void TorrentPreferences::SetPeerLimit(uint16 limit)
+{
+	tr_sessionSetPeerLimit(fSession, limit);
+}
+
+void TorrentPreferences::SetPeerLimitPerTorrent(uint16 limit)
+{
+	tr_sessionSetPeerLimitPerTorrent(fSession, limit);
+}
+
+void TorrentPreferences::DistributedHashTableToggle()
+{
+	tr_sessionSetDHTEnabled(fSession, !DistributedHashTableEnabled());
+}
+
+void TorrentPreferences::PeerExchangeToggle()
+{
+	tr_sessionSetPexEnabled(fSession, !PeerExchangeEnabled());	
+}
+
+void TorrentPreferences::MicroTransportProtocolToggle()
+{
+	tr_sessionSetUTPEnabled(fSession, !MicroTransportProtocolEnabled());
+}
+
+void TorrentPreferences::LocalPeerDiscoveryToggle()
+{
+	tr_sessionSetLPDEnabled(fSession, !LocalPeerDiscoveryEnabled());
+}
+
+void TorrentPreferences::SetEncryptionMode(tr_encryption_mode mode)
+{
+	tr_sessionSetEncryption(fSession, mode);
+}
+
 

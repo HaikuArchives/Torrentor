@@ -26,6 +26,10 @@
 #ifndef TORRENTOR_H
 #define TORRENTOR_H
 
+
+#include <cstdio>
+#include <cstdlib>
+
 //
 // Include libtransmission headers.
 //

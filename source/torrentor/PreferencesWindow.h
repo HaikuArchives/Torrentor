@@ -43,9 +43,23 @@ public:
 	void MessageReceived(BMessage* message);
 	bool QuitRequested();
 protected:
-	BView*	_CreateTorrentsPage(float spacing);
-	void 	OnDownloadFolderChanged(BMessage* message);
-	void	OnIncompleteFolderChanged(BMessage* message);
+	BView*		_CreateTorrentsPage(float spacing);
+	BView*		_CreateConnectionPage(float spacing);
+	BMessage*	_CreateEncryptionMenuMessage(int32 index);
+	
+	//
+	void 		_DownloadFolderChanged(BMessage* message);
+	void		_IncompleteFolderChanged(BMessage* message);
+	void		_IncomingPortChanged(BMessage* message);
+	void		_IncomingPortRandomChanged(BMessage* message);
+	void		_PortForwardingChanged(BMessage* message);
+	void		_PeerLimitChanged(BMessage* message);
+	void		_PeerLimitPerTorrentChanged(BMessage* message);
+	void		_DistributedHashTableChanged(BMessage* message);
+	void		_TorrentPeerExchangeChanged(BMessage* message);
+	void		_MicroTransportProtocolChanged(BMessage* message);
+	void		_LocalPeerDiscoveryChanged(BMessage* message);
+	void		_EncryptionModeChanged(BMessage* message);
 private:
 	TorrentPreferences*	fTorrentPreferences;
 	BButton*			fApplyButton;
@@ -53,6 +67,21 @@ private:
 	FolderSelect* 		fTorrentSaveLocationPath;
 	BCheckBox* 			fIncompleteDirEnabled;
 	FolderSelect* 		fIncompleteDirPath;
+	BTextControl* 		fListeningPort;
+	BButton* 			fRandomPort;
+	BButton*			fApplyPort;
+	BCheckBox* 			fEnableForwardingPort;
+	BTextControl* 		fMaxConnection;
+	BButton*			fApplyMaxConnection;
+	BTextControl* 		fTorrentMaxConnection;
+	BButton*			fApplyTorrentMaxConnection;
+	BCheckBox* 			fEnableDHTValue;
+	BCheckBox* 			fEnablePEXValue;
+	BCheckBox* 			fEnableUTPValue;
+	BCheckBox* 			fEnableLPDValue;
+	BMenuField* 		fEncryptionMenu;
+	BMenuItem* 			fEncryptionMenuItem[3];
+
 };
 
 

@@ -77,7 +77,7 @@ protected:
 	void OnTorrentComplete(BMessage* message);
 	void OnTorrentPauseStartAll(BMessage* message);
 	
-	
+	void	_CheckMimeTypeAssociation();
 	//
 	//
 	//

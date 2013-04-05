@@ -135,11 +135,6 @@ MainWindow::MainWindow(BRect frame)
 
 MainWindow::~MainWindow()
 {
-	fPreferencesWindow->Lock();
-	fPreferencesWindow->QuitRequested();
-	fPreferencesWindow->Quit();
-	
-	delete fPreferencesWindow;
 	delete fOpenPanel;
 }
 
@@ -147,21 +142,7 @@ void MainWindow::InitWindow()
 {
 }
 
-//
-//	File ->
-//			- Open Torrent
-//			- Open From URL
-//			---------------
-//			- Pause all torrents
-//			- Resume all torrents
-//			---------------
-//			Quit
-//	---------------------------------
-//	Edit ->
-//			-
-//
-//	---------------------------------
-//
+
 void MainWindow::CreateMenuBar()
 {
 	//
@@ -169,77 +150,67 @@ void MainWindow::CreateMenuBar()
 	//
 	fMenuBar = new BMenuBar(BRect(0, 0, 0, 0), "MainMenuBar");
 	
-	BMenu* menu = new BMenu(B_TRANSLATE("File"));
+	fMenuFile = new BMenu(B_TRANSLATE("File"));
 	
 	//
 	//
 	//
 	//menu->AddItem(new BMenuItem("New Torrent", NULL));
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Open Torrent"), new BMessage(MENU_FILE_OPEN_TORRENT), 'O'));
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Open From Magnet"), new BMessage(MENU_FILE_OPEN_TORRENT_URL), 'M'));
-	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Start All Torrents"), NULL));
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Pause All Torrent"), NULL));
-	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(B_QUIT_REQUESTED), 'Q'));
-	
-	//menu->AddItem(new BMenuItem("Open" B_UTF8_ELLIPSIS, new BMessage(MENU_FILE_OPEN), 'O'));
+	fMenuFile->AddItem(new BMenuItem(B_TRANSLATE("Open Torrent"), new BMessage(MENU_FILE_OPEN_TORRENT), 'O'));
+	fMenuFile->AddItem(new BMenuItem(B_TRANSLATE("Open From Magnet"), new BMessage(MENU_FILE_OPEN_TORRENT_URL), 'M'));
+	fMenuFile->AddSeparatorItem();
+	fMenuFile->AddItem(new BMenuItem(B_TRANSLATE("Start All Torrents"), NULL));
+	fMenuFile->AddItem(new BMenuItem(B_TRANSLATE("Pause All Torrent"), NULL));
+	fMenuFile->AddSeparatorItem();
+	fMenuFile->AddItem(new BMenuItem(B_TRANSLATE("Quit"), new BMessage(B_QUIT_REQUESTED), 'Q'));
 	
 	//
 	//
 	//
-	fMenuBar->AddItem(menu);
+	fMenuBar->AddItem(fMenuFile);
 	
 	//
 	//
 	//
-	menu = new BMenu("Edit");
-	menu->AddItem(new BMenuItem("Select All", NULL));
-	menu->AddItem(new BMenuItem("Deselect All", NULL));
-	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem("Preferences", new BMessage(MENU_EDIT_PREFERENCES)));
-/*
-	//
-	//
-	//
-	BMenuItem* item = new BMenuItem("Preferences", new BMessage(MENU_EDIT_PREFERENCES));
+	fMenuEdit = new BMenu("Edit");
+	fMenuEdit->AddItem(new BMenuItem("Select All", NULL));
+	fMenuEdit->AddItem(new BMenuItem("Deselect All", NULL));
+	fMenuEdit->AddSeparatorItem();
+	fMenuEdit->AddItem(new BMenuItem("Preferences", new BMessage(MENU_EDIT_PREFERENCES), 'P'));
 	
-	item->SetTarget(be_app);
-	
-	menu->AddItem(item);
-*/
-	fMenuBar->AddItem(menu);
+	fMenuBar->AddItem(fMenuEdit);
 	
 	
 	//
 	//
 	//
-	menu = new BMenu("Torrent");
-	menu->AddItem(new BMenuItem("Inspect", new BMessage(MENU_TORRENT_INSPECT), 'I'));
-	menu->AddItem(new BMenuItem("Open download folder", new BMessage(MENU_TORRENT_OPEN_DOWNLOAD)));
-	menu->AddItem(new BSeparatorItem);
-	menu->AddItem(new BMenuItem("Remove", new BMessage(MENU_TORRENT_REMOVE)));
+	fMenuTorrent = new BMenu("Torrent");
+	fMenuTorrent->SetEnabled(false);
+	fMenuTorrent->AddItem(new BMenuItem("Inspect", new BMessage(MENU_TORRENT_INSPECT), 'I'));
+	fMenuTorrent->AddItem(new BMenuItem("Open download folder", new BMessage(MENU_TORRENT_OPEN_DOWNLOAD)));
+	fMenuTorrent->AddSeparatorItem();
+	fMenuTorrent->AddItem(new BMenuItem("Remove", new BMessage(MENU_TORRENT_REMOVE)));
 	//menu->AddItem(new BMenuItem("Select All", NULL));
 	
-	fMenuBar->AddItem(menu);
+	fMenuBar->AddItem(fMenuTorrent);
 	
 	
 	//
 	//
 	//
-	menu = new BMenu("View");
+	fMenuView = new BMenu("View");
 	
 	
-	fMenuBar->AddItem(menu);
+	fMenuBar->AddItem(fMenuView);
 	
 	
 	//
 	//
 	//
-	menu = new BMenu("Help");
+	fMenuHelp = new BMenu("Help");
 	
 	
-	fMenuBar->AddItem(menu);
+	fMenuBar->AddItem(fMenuHelp);
 }
 
 
@@ -269,6 +240,11 @@ void MainWindow::MessageReceived(BMessage* message)
 	case MENU_TORRENT_REMOVE:
 		OnMenuTorrentRemove();
 		break;
+	case MSG_DOWNLOAD_VIEW_SELECTION_CHANGED:
+		fMenuTorrent->SetEnabled(fDownloadView->ItemSelected() != NULL);
+		fMenuBar->Invalidate();
+		break;	
+	
 	default:
 		BWindow::MessageReceived(message);
 		break;

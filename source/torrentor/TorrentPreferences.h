@@ -45,6 +45,15 @@ public:
 	BString DownloadFolder();
 	bool	IncompleteFolderEnabled();
 	BString IncompleteFolder();
+	uint16	IncomingPort();
+	bool	PortForwardingEnabled();
+	uint16 	PeerLimit();
+	uint16	PeerLimitPerTorrent();
+	bool	DistributedHashTableEnabled();
+	bool	PeerExchangeEnabled();
+	bool	MicroTransportProtocolEnabled();
+	bool	LocalPeerDiscoveryEnabled();
+	tr_encryption_mode	EncryptionMode();
 	
 	//
 	void	StartWhenAddedToggle();
@@ -52,6 +61,16 @@ public:
 	void	IncompleteFolderToggle();
 	void	SetDownloadFolder(BString path);
 	void	SetIncompleteFolder(BString path);
+	void	SetIncomingPort(uint16 port);
+	uint16	SetIncomingRandomPort();
+	void	PortForwardingToggle();
+	void 	SetPeerLimit(uint16 limit);
+	void	SetPeerLimitPerTorrent(uint16 limit);
+	void	DistributedHashTableToggle();
+	void	PeerExchangeToggle();
+	void	MicroTransportProtocolToggle();
+	void	LocalPeerDiscoveryToggle();
+	void	SetEncryptionMode(tr_encryption_mode mode);
 	
 	void SetSession(tr_session* session) { fSession = session; }
 	tr_benc*	Handle() { return &fHandle; }

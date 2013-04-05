@@ -31,10 +31,12 @@
 #include <ScrollBar.h>
 #include <ScrollView.h>
 #include <SpaceLayoutItem.h>
+#include <Window.h>
+
+#include "Torrentor.h"
+#include "TorrentorMessages.h"
 #include "DownloadItem.h"
 #include "DownloadView.h"
-
-#include <cstdio>
 
 
 class DownloadScrollView : public BScrollView {
@@ -117,6 +119,7 @@ void DownloadView::MouseDown(BPoint point)
 	
 	fSelectedItem = NULL;
 
+	Window()->PostMessage(new BMessage(MSG_DOWNLOAD_VIEW_SELECTION_CHANGED));
 }
 
 BView* DownloadView::ScrollView() const
@@ -220,9 +223,7 @@ void DownloadView::ItemClick(DownloadItem* Item)
 	//	the previous selected item (if any).
 	//
 	if( fSelectedItem && Item != fSelectedItem )
-	{
 		fSelectedItem->Deselect();
-	}
 	
 	//
 	//
@@ -234,4 +235,5 @@ void DownloadView::ItemClick(DownloadItem* Item)
 	//
 	fSelectedItem = Item;
 	
+	Window()->PostMessage(new BMessage(MSG_DOWNLOAD_VIEW_SELECTION_CHANGED));
 }
