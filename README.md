@@ -1,4 +1,4 @@
-Torrentor! <a href='http://www.pledgie.com/campaigns/19823'><img alt='Click here to lend your support to: Torrentor! and make a donation at www.pledgie.com !' src='http://www.pledgie.com/campaigns/19823.png?skin_name=chrome' border='0' /></a>
+Torrentor!
 =============
 
 Torrentor is a torrent client for the haiku operating system.
