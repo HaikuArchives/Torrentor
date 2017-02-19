@@ -66,7 +66,6 @@ All rights reserved.
 
 #include "ObjectListPrivate.h"
 
-#include "ColorTools.h"
 #include "ObjectList.h"
 
 #define DOUBLE_BUFFERED_COLUMN_RESIZE 1
