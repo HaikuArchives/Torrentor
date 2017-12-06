@@ -14,7 +14,5 @@ To build Torrentor you need some development libraries:
 
 Build
 -------
-Be sure you're using gcc4, you can set this by running ```$ setarch x86```
-
-To build torrentor, browse to the root source directory and run ```$ jam```
-
+Be sure you're using gcc5, you can set this by running ```$ setarch x86```.<br>
+To build torrentor, browse to the root source directory and run ```$ jam```.
