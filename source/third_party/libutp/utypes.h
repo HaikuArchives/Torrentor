@@ -15,8 +15,12 @@ typedef signed int int32;
 typedef unsigned __int64 uint64;
 typedef signed __int64 int64;
 #else
+
+#ifndef __HAIKU__
 typedef unsigned long long uint64;
 typedef long long int64;
+#endif
+
 #endif
 
 /* compile-time assert */
