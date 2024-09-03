@@ -3,6 +3,7 @@
 
 // standard types
 typedef unsigned char byte;
+#ifndef __HAIKU__
 typedef unsigned char uint8;
 typedef signed char int8;
 typedef unsigned short uint16;
@@ -10,6 +11,9 @@ typedef signed short int16;
 typedef unsigned int uint;
 typedef unsigned int uint32;
 typedef signed int int32;
+#else
+#include <SupportDefs.h>
+#endif
 
 #ifdef _MSC_VER
 typedef unsigned __int64 uint64;
@@ -39,8 +43,10 @@ CASSERT(8 == sizeof(int64), sizeof_int64_is_8)
 typedef const char * cstr;
 typedef char * str;
 
+#ifndef __HAIKU__
 #ifndef __cplusplus
 typedef uint8 bool;
+#endif
 #endif
 
 #endif //__UTYPES_H__
