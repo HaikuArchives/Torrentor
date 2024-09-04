@@ -93,7 +93,7 @@ AddMagnetLinkWindow::AddMagnetLinkWindow()
 BString AddMagnetLinkWindow::GetMagnetFromClipboard() {
 	const char *text = NULL;
 	ssize_t numBytes;
-	status_t status;
+	status_t status = B_ERROR;
 	BMessage *clip = (BMessage *)NULL;
 	if (be_clipboard->Lock()) {
 		if ((clip = be_clipboard->Data())) {

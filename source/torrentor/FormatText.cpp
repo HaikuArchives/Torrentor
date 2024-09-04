@@ -114,7 +114,7 @@ void FormatStatusText(BString& Buffer, TorrentObject* torrent)
 		Buffer.SetTo("Paused");
 		break;
 	case TR_STATUS_CHECK_WAIT:
-		Buffer.SetTo("Waiting to check existing data"B_UTF8_ELLIPSIS);
+		Buffer.SetTo("Waiting to check existing data" B_UTF8_ELLIPSIS);
 		break;
 	case TR_STATUS_CHECK:
 		Buffer.SetToFormat("Checking existing data (%s%%)",
@@ -170,7 +170,7 @@ void FormatTimeText(BString& Buffer, int seconds, bool ClearBuffer)
 	//
 	//
 	//
-	for( int i = 0; i < countof(FormatTimeData); i++ )
+	for( uint i = 0; i < countof(FormatTimeData); i++ )
 	{
 		if( Remainder < 1 )
 			return;
@@ -267,8 +267,14 @@ void FormatStateString(BString& Buffer, const TorrentObject* torrent)
 	case TR_STATUS_DOWNLOAD:
 		Buffer = "Downloading";
 		break;
+	case TR_STATUS_DOWNLOAD_WAIT:
+		Buffer = "Queued to download";
+		break;
 	case TR_STATUS_SEED:
 		Buffer = "Seeding";
+		break;
+	case TR_STATUS_SEED_WAIT:
+		Buffer = "Queued to seed";
 		break;
 	}
 }
