@@ -108,6 +108,9 @@ PreferencesWindow::PreferencesWindow()
 	// @TODO: clean up this mess..
 	//
 	fTorrentPreferences = static_cast<TorrentorApp*>(be_app)->Preferences();
+	// Disable Encryption by default, as it currently crashes on OpenSSL related code.
+	fTorrentPreferences->SetEncryptionMode(static_cast<tr_encryption_mode>(0));
+
 	float spacing = be_control_look->DefaultItemSpacing();
 
 	BTabView* tabView = new BTabView("settings pages", B_WIDTH_FROM_LABEL);
